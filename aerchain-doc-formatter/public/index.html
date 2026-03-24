@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aerchain Doc Formatter — Dark Theme Outputter</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   AERCHAIN DOC FORMATTER — APP UI
+   Uses the Aerchain Dark Theme design system
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. TOKENS ─────────────────────────────────────────────────── */
+:root {
+  --canvas-a: hsl(262 55% 18%);
+  --canvas-b: hsl(270 45% 12%);
+  --canvas-c: hsl(255 40% 10%);
+  --canvas-d: hsl(245 35% 8%);
+  --aerchain: #DC5F40;
+  --gp: linear-gradient(135deg, hsl(262 80% 55%), hsl(275 85% 58%));
+  --active-glow: hsl(262 80% 55% / .25);
+  --col-purple: hsl(262 80% 55%);
+  --col-blue:   hsl(217 88% 58%);
+  --col-green:  hsl(152 68% 42%);
+  --col-amber:  hsl(38 92% 50%);
+  --col-red:    hsl(0 68% 48%);
+  --glass-1: rgba(255,255,255,.03);
+  --glass-2: rgba(255,255,255,.06);
+  --glass-3: rgba(255,255,255,.10);
+  --glass-border: rgba(255,255,255,.06);
+  --glass-border-h: rgba(255,255,255,.14);
+  --fg:  rgba(255,255,255,.94);
+  --fg2: rgba(255,255,255,.72);
+  --fg3: rgba(255,255,255,.42);
+  --r: 16px;
+  --rm: 12px;
+  --dot: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+}
+
+/* ── 2. RESET ──────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+body {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  background: linear-gradient(145deg, var(--canvas-a), var(--canvas-b) 35%, var(--canvas-c) 70%, var(--canvas-d));
+  background-attachment: fixed;
+  color: var(--fg);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── 3. NAV ────────────────────────────────────────────────────── */
+.app-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 32px;
+  background: linear-gradient(180deg, hsl(262 55% 16% / .96), hsl(262 55% 16% / .88));
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--glass-border);
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 10px;
+}
+.nav-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 800; letter-spacing: .12em;
+  color: var(--aerchain);
+}
+.nav-sep {
+  width: 1px; height: 16px; background: rgba(255,255,255,.12);
+}
+.nav-title {
+  font-size: 12px; font-weight: 600; color: var(--fg2);
+  letter-spacing: .04em;
+}
+.nav-actions {
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* ── 4. MAIN LAYOUT ────────────────────────────────────────────── */
+.app-container {
+  max-width: 1400px; margin: 0 auto;
+  padding: 80px 32px 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  min-height: 100vh;
+}
+.app-container.preview-mode {
+  grid-template-columns: 1fr;
+}
+.app-container.preview-mode .input-panel {
+  display: none;
+}
+
+/* ── 5. PANELS ─────────────────────────────────────────────────── */
+.panel {
+  display: flex; flex-direction: column;
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--glass-2);
+  border-bottom: 1px solid var(--glass-border);
+}
+.panel-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--fg3);
+}
+.panel-body {
+  flex: 1; padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* ── 6. INPUT ELEMENTS ─────────────────────────────────────────── */
+.input-group {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.input-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--fg3);
+}
+.text-input {
+  flex: 1; min-height: 300px;
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--rm);
+  padding: 16px;
+  color: var(--fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: none;
+  transition: border-color .2s;
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--glass-border-h);
+}
+.text-input::placeholder {
+  color: var(--fg3);
+}
+.instructions-input {
+  min-height: 60px;
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--rm);
+  padding: 12px 16px;
+  color: var(--fg);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  transition: border-color .2s;
+}
+.instructions-input:focus {
+  outline: none;
+  border-color: var(--glass-border-h);
+}
+.instructions-input::placeholder {
+  color: var(--fg3);
+}
+
+/* API Key input */
+.api-key-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.api-key-input {
+  flex: 1;
+  background: var(--glass-1);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  transition: border-color .2s;
+}
+.api-key-input:focus {
+  outline: none;
+  border-color: var(--glass-border-h);
+}
+
+/* ── 7. THEME SELECTOR ─────────────────────────────────────────── */
+.theme-selector {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+}
+.theme-dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer; transition: all .25s;
+  position: relative;
+}
+.theme-dot:hover { transform: scale(1.2); }
+.theme-dot.active {
+  border-color: rgba(255,255,255,.75);
+  box-shadow: 0 0 10px var(--active-glow);
+}
+.theme-dot::after {
+  content: attr(title);
+  position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--fg3); white-space: nowrap;
+  opacity: 0; transition: opacity .2s; pointer-events: none;
+}
+.theme-dot:hover::after { opacity: 1; }
+
+.theme-dot[data-t="purple-glass"]     { background: linear-gradient(135deg, hsl(262 80% 55%), hsl(275 85% 58%)); }
+.theme-dot[data-t="deep-ocean"]       { background: linear-gradient(135deg, hsl(195 85% 45%), hsl(175 80% 42%)); }
+.theme-dot[data-t="rose-quartz"]      { background: linear-gradient(135deg, hsl(330 72% 58%), hsl(290 70% 55%)); }
+.theme-dot[data-t="midnight-emerald"] { background: linear-gradient(135deg, hsl(152 68% 42%), hsl(165 75% 38%)); }
+.theme-dot[data-t="arctic"]           { background: linear-gradient(135deg, hsl(217 88% 58%), hsl(200 90% 55%)); }
+.theme-dot[data-t="topaz"]            { background: linear-gradient(135deg, hsl(188 80% 48%), hsl(42 88% 52%)); }
+.theme-dot[data-t="citrine"]          { background: linear-gradient(135deg, hsl(48 95% 52%), hsl(38 90% 44%)); }
+.theme-dot[data-t="slate"]            { background: linear-gradient(135deg, hsl(213 72% 52%), hsl(232 68% 58%)); }
+
+/* ── 8. BUTTONS ────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px;
+  border: none; border-radius: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--gp);
+  color: white;
+  box-shadow: 0 4px 16px var(--active-glow);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--active-glow);
+}
+.btn-primary:disabled {
+  opacity: .4; cursor: not-allowed; transform: none;
+  box-shadow: none;
+}
+.btn-ghost {
+  background: var(--glass-2);
+  color: var(--fg2);
+  border: 1px solid var(--glass-border);
+}
+.btn-ghost:hover {
+  background: var(--glass-3);
+  color: var(--fg);
+  border-color: var(--glass-border-h);
+}
+.btn-sm {
+  padding: 6px 12px; font-size: 11px; border-radius: 8px;
+}
+
+/* ── 9. FILE UPLOAD ZONE ───────────────────────────────────────── */
+.upload-zone {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--glass-border-h);
+  border-radius: var(--rm);
+  cursor: pointer;
+  transition: all .2s;
+  color: var(--fg3);
+  font-size: 12px;
+}
+.upload-zone:hover {
+  background: var(--glass-1);
+  border-color: var(--col-purple);
+  color: var(--fg2);
+}
+.upload-zone.active {
+  border-color: var(--col-green);
+  background: hsl(152 68% 42% / .05);
+  color: var(--col-green);
+}
+.upload-zone svg {
+  width: 18px; height: 18px;
+}
+.upload-zone input { display: none; }
+
+/* ── 10. OUTPUT PANEL ──────────────────────────────────────────── */
+.output-frame {
+  flex: 1;
+  background: white;
+  border-radius: var(--rm);
+  min-height: 400px;
+  position: relative;
+  overflow: hidden;
+}
+.output-frame iframe {
+  width: 100%; height: 100%;
+  border: none;
+  min-height: 600px;
+}
+.output-placeholder {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; min-height: 400px;
+  text-align: center; gap: 12px;
+  background: var(--glass-1);
+  border-radius: var(--rm);
+}
+.output-placeholder svg {
+  width: 48px; height: 48px; color: var(--fg3); opacity: .5;
+}
+.output-placeholder p {
+  font-size: 13px; color: var(--fg3);
+}
+
+/* ── 11. PROGRESS / STATUS ─────────────────────────────────────── */
+.status-bar {
+  display: none; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: var(--glass-2);
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+}
+.status-bar.visible { display: flex; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--col-green);
+  animation: metaPulse 2s ease-in-out infinite;
+}
+.status-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .06em; color: var(--fg2);
+}
+@keyframes metaPulse {
+  0%, 100% { box-shadow: 0 0 6px hsl(152 68% 42% / .4); }
+  50% { box-shadow: 0 0 14px hsl(152 68% 42% / .7); }
+}
+
+/* ── 12. ACTION BAR ────────────────────────────────────────────── */
+.action-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+}
+.action-bar-left {
+  display: flex; align-items: center; gap: 8px;
+}
+.action-bar-right {
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ── 13. RESPONSIVE ────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+  .output-panel { order: -1; }
+}
+@media (max-width: 768px) {
+  .app-nav { padding: 8px 16px; }
+  .nav-title { display: none; }
+  .app-container { padding: 70px 16px 24px; gap: 16px; }
+}
+
+/* ── 14. SCROLLBAR ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--glass-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--glass-border-h); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="app-nav">
+  <div class="nav-brand">
+    <span class="nav-logo">AERCHAIN</span>
+    <div class="nav-sep"></div>
+    <span class="nav-title">Doc Formatter &mdash; Dark Theme Outputter</span>
+  </div>
+  <div class="nav-actions">
+    <button class="btn btn-ghost btn-sm" id="toggleViewBtn" onclick="toggleView()" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Split View
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="app-container" id="appContainer">
+
+  <!-- INPUT PANEL -->
+  <div class="panel input-panel">
+    <div class="panel-header">
+      <span class="panel-label">Input</span>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="clearInput()">Clear</button>
+      </div>
+    </div>
+    <div class="panel-body">
+
+      <!-- API Key -->
+      <div class="input-group">
+        <label class="input-label">Claude API Key</label>
+        <div class="api-key-row">
+          <input type="password" class="api-key-input" id="apiKey"
+                 placeholder="sk-ant-api03-..." autocomplete="off">
+          <button class="btn btn-ghost btn-sm" onclick="toggleKeyVisibility()" id="keyToggle">Show</button>
+        </div>
+      </div>
+
+      <!-- File Upload -->
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span id="uploadText">Upload file (.html, .txt, .md, .csv, .json)</span>
+        <input type="file" id="fileInput" accept=".html,.htm,.txt,.md,.csv,.json" onchange="handleFile(this)">
+      </div>
+
+      <!-- Content -->
+      <div class="input-group" style="flex:1; display:flex; flex-direction:column;">
+        <label class="input-label">Content to Format</label>
+        <textarea class="text-input" id="contentInput"
+                  placeholder="Paste your content here — text, notes, outlines, data, HTML...&#10;&#10;The AI will reformat it into a polished Aerchain Dark Theme document."></textarea>
+      </div>
+
+      <!-- Instructions -->
+      <div class="input-group">
+        <label class="input-label">Additional Instructions (optional)</label>
+        <textarea class="instructions-input" id="instructionsInput"
+                  placeholder="e.g. 'Make it a keynote-style presentation' or 'Focus on the executive summary'"></textarea>
+      </div>
+
+      <!-- Default Theme -->
+      <div class="input-group">
+        <label class="input-label">Default Theme</label>
+        <div class="theme-selector" id="themeSelector">
+          <div class="theme-dot active" data-t="purple-glass" title="Purple Glass" onclick="selectTheme(this)"></div>
+          <div class="theme-dot" data-t="deep-ocean" title="Deep Ocean" onclick="selectTheme(this)"></div>
+          <div class="theme-dot" data-t="rose-quartz" title="Rose Quartz" onclick="selectTheme(this)"></div>
+          <div class="theme-dot" data-t="midnight-emerald" title="Midnight Emerald" onclick="selectTheme(this)"></div>
+          <div class="theme-dot" data-t="arctic" title="Arctic" onclick="selectTheme(this)"></div>
+          <div class="theme-dot" data-t="topaz" title="Topaz" onclick="selectTheme(this)"></div>
+          <div class="theme-dot" data-t="citrine" title="Citrine" onclick="selectTheme(this)"></div>
+          <div class="theme-dot" data-t="slate" title="Slate" onclick="selectTheme(this)"></div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="status-bar" id="statusBar">
+        <div class="status-dot"></div>
+        <span class="status-text" id="statusText">Formatting...</span>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-bar">
+        <div class="action-bar-left">
+          <button class="btn btn-primary" id="formatBtn" onclick="formatContent()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Format with AI
+          </button>
+        </div>
+        <div class="action-bar-right">
+          <button class="btn btn-ghost btn-sm" id="downloadBtn" onclick="downloadOutput()" style="display:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download HTML
+          </button>
+          <button class="btn btn-ghost btn-sm" id="copyBtn" onclick="copyOutput()" style="display:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy HTML
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OUTPUT PANEL -->
+  <div class="panel output-panel">
+    <div class="panel-header">
+      <span class="panel-label">Output Preview</span>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost btn-sm" id="newTabBtn" onclick="openInNewTab()" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          New Tab
+        </button>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:0;">
+      <div class="output-placeholder" id="outputPlaceholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <p>Formatted output will appear here</p>
+      </div>
+      <div class="output-frame" id="outputFrame" style="display:none;">
+        <iframe id="outputIframe" sandbox="allow-scripts allow-same-origin"></iframe>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let selectedTheme = 'purple-glass';
+let outputHTML = '';
+let isPreviewMode = false;
+
+// ── Theme selector ─────────────────────────────────────────────────
+function selectTheme(el) {
+  document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+  el.classList.add('active');
+  selectedTheme = el.dataset.t;
+}
+
+// ── File upload ────────────────────────────────────────────────────
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('contentInput').value = e.target.result;
+    document.getElementById('uploadZone').classList.add('active');
+    document.getElementById('uploadText').textContent = file.name;
+  };
+  reader.readAsText(file);
+}
+
+// ── API key visibility toggle ──────────────────────────────────────
+function toggleKeyVisibility() {
+  const input = document.getElementById('apiKey');
+  const btn = document.getElementById('keyToggle');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = 'Hide';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'Show';
+  }
+}
+
+// ── Clear ──────────────────────────────────────────────────────────
+function clearInput() {
+  document.getElementById('contentInput').value = '';
+  document.getElementById('instructionsInput').value = '';
+  document.getElementById('uploadZone').classList.remove('active');
+  document.getElementById('uploadText').textContent = 'Upload file (.html, .txt, .md, .csv, .json)';
+  document.getElementById('fileInput').value = '';
+}
+
+// ── Format content (main action) ───────────────────────────────────
+async function formatContent() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const content = document.getElementById('contentInput').value.trim();
+  const instructions = document.getElementById('instructionsInput').value.trim();
+
+  if (!apiKey) {
+    alert('Please enter your Claude API key.');
+    document.getElementById('apiKey').focus();
+    return;
+  }
+  if (!content) {
+    alert('Please enter or upload content to format.');
+    document.getElementById('contentInput').focus();
+    return;
+  }
+
+  // UI state: formatting
+  const btn = document.getElementById('formatBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Formatting...';
+
+  const statusBar = document.getElementById('statusBar');
+  const statusText = document.getElementById('statusText');
+  statusBar.classList.add('visible');
+  statusText.textContent = 'Connecting to Claude...';
+
+  // Hide old output
+  document.getElementById('outputPlaceholder').style.display = 'none';
+  document.getElementById('outputFrame').style.display = 'block';
+
+  outputHTML = '';
+
+  try {
+    const formData = new FormData();
+    formData.append('content', content);
+    formData.append('instructions', instructions);
+    formData.append('theme', selectedTheme);
+
+    const response = await fetch('/api/format', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Server error');
+    }
+
+    statusText.textContent = 'Generating document...';
+
+    // Read SSE stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+
+        if (data.error) throw new Error(data.error);
+        if (data.done) break;
+        if (data.text) {
+          outputHTML += data.text;
+          // Update preview periodically
+          updatePreview();
+        }
+      }
+    }
+
+    // Final preview update
+    updatePreview();
+    statusText.textContent = 'Complete!';
+
+    // Show action buttons
+    document.getElementById('downloadBtn').style.display = 'inline-flex';
+    document.getElementById('copyBtn').style.display = 'inline-flex';
+    document.getElementById('newTabBtn').style.display = 'inline-flex';
+    document.getElementById('toggleViewBtn').style.display = 'inline-flex';
+
+    setTimeout(() => statusBar.classList.remove('visible'), 2000);
+
+  } catch (err) {
+    statusText.textContent = 'Error: ' + err.message;
+    statusBar.querySelector('.status-dot').style.background = 'var(--col-red)';
+    setTimeout(() => {
+      statusBar.classList.remove('visible');
+      statusBar.querySelector('.status-dot').style.background = '';
+    }, 5000);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Format with AI';
+  }
+}
+
+// Debounced preview updater
+let previewTimeout;
+function updatePreview() {
+  clearTimeout(previewTimeout);
+  previewTimeout = setTimeout(() => {
+    const iframe = document.getElementById('outputIframe');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(outputHTML);
+    doc.close();
+  }, 150);
+}
+
+// ── Download ───────────────────────────────────────────────────────
+function downloadOutput() {
+  if (!outputHTML) return;
+  const blob = new Blob([outputHTML], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'aerchain-formatted-document.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Copy HTML ──────────────────────────────────────────────────────
+async function copyOutput() {
+  if (!outputHTML) return;
+  await navigator.clipboard.writeText(outputHTML);
+  const btn = document.getElementById('copyBtn');
+  const original = btn.innerHTML;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+  setTimeout(() => btn.innerHTML = original, 1500);
+}
+
+// ── Open in new tab ────────────────────────────────────────────────
+function openInNewTab() {
+  if (!outputHTML) return;
+  const blob = new Blob([outputHTML], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
+// ── Toggle split/preview view ──────────────────────────────────────
+function toggleView() {
+  const container = document.getElementById('appContainer');
+  const btn = document.getElementById('toggleViewBtn');
+  isPreviewMode = !isPreviewMode;
+  if (isPreviewMode) {
+    container.classList.add('preview-mode');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Split View';
+  } else {
+    container.classList.remove('preview-mode');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/></svg> Full Preview';
+  }
+}
+
+// ── Persist API key in sessionStorage ──────────────────────────────
+const savedKey = sessionStorage.getItem('aerchain-api-key');
+if (savedKey) document.getElementById('apiKey').value = savedKey;
+document.getElementById('apiKey').addEventListener('change', (e) => {
+  sessionStorage.setItem('aerchain-api-key', e.target.value);
+});
+</script>
+
+</body>
+</html>
