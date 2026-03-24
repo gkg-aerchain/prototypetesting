@@ -5,6 +5,15 @@ const path = require('path');
 const fs = require('fs');
 const { DESIGN_SYSTEM_PROMPT } = require('./design-system-prompt');
 
+// Load .env file
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf-8').split('\n').forEach(line => {
+    const [key, ...val] = line.split('=');
+    if (key && val.length) process.env[key.trim()] = val.join('=').trim();
+  });
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -36,10 +45,10 @@ app.get('/api/health', (req, res) => {
 // Main formatting endpoint
 app.post('/api/format', upload.single('file'), async (req, res) => {
   try {
-    const apiKey = req.headers['x-api-key'] || process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return res.status(400).json({
-        error: 'No API key provided. Set ANTHROPIC_API_KEY env var or pass via x-api-key header.'
+        error: 'ANTHROPIC_API_KEY not set. Add it to the .env file.'
       });
     }
 
@@ -65,7 +74,7 @@ app.post('/api/format', upload.single('file'), async (req, res) => {
     userMessage += `\nSet the default active theme to "${selectedTheme}" (add data-theme="${selectedTheme}" to the body tag if it's not purple-glass, and mark the corresponding .td dot as active).\n`;
     userMessage += `\n---BEGIN CONTENT---\n${inputContent}\n---END CONTENT---`;
 
-    const client = new Anthropic.default({ apiKey });
+    const client = new Anthropic({ apiKey });
 
     // Use streaming for long responses
     res.setHeader('Content-Type', 'text/event-stream');

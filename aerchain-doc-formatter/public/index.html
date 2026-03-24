@@ -172,26 +172,6 @@ body {
   color: var(--fg3);
 }
 
-/* API Key input */
-.api-key-row {
-  display: flex; align-items: center; gap: 10px;
-}
-.api-key-input {
-  flex: 1;
-  background: var(--glass-1);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: var(--fg);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  transition: border-color .2s;
-}
-.api-key-input:focus {
-  outline: none;
-  border-color: var(--glass-border-h);
-}
-
 /* ── 7. THEME SELECTOR ─────────────────────────────────────────── */
 .theme-selector {
   display: flex; align-items: center; gap: 8px;
@@ -407,16 +387,6 @@ body {
     </div>
     <div class="panel-body">
 
-      <!-- API Key -->
-      <div class="input-group">
-        <label class="input-label">Claude API Key</label>
-        <div class="api-key-row">
-          <input type="password" class="api-key-input" id="apiKey"
-                 placeholder="sk-ant-api03-..." autocomplete="off">
-          <button class="btn btn-ghost btn-sm" onclick="toggleKeyVisibility()" id="keyToggle">Show</button>
-        </div>
-      </div>
-
       <!-- File Upload -->
       <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -555,19 +525,6 @@ function handleFile(input) {
   reader.readAsText(file);
 }
 
-// ── API key visibility toggle ──────────────────────────────────────
-function toggleKeyVisibility() {
-  const input = document.getElementById('apiKey');
-  const btn = document.getElementById('keyToggle');
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = 'Hide';
-  } else {
-    input.type = 'password';
-    btn.textContent = 'Show';
-  }
-}
-
 // ── Clear ──────────────────────────────────────────────────────────
 function clearInput() {
   document.getElementById('contentInput').value = '';
@@ -579,15 +536,9 @@ function clearInput() {
 
 // ── Format content (main action) ───────────────────────────────────
 async function formatContent() {
-  const apiKey = document.getElementById('apiKey').value.trim();
   const content = document.getElementById('contentInput').value.trim();
   const instructions = document.getElementById('instructionsInput').value.trim();
 
-  if (!apiKey) {
-    alert('Please enter your Claude API key.');
-    document.getElementById('apiKey').focus();
-    return;
-  }
   if (!content) {
     alert('Please enter or upload content to format.');
     document.getElementById('contentInput').focus();
@@ -618,7 +569,6 @@ async function formatContent() {
 
     const response = await fetch('/api/format', {
       method: 'POST',
-      headers: { 'x-api-key': apiKey },
       body: formData
     });
 
@@ -738,12 +688,6 @@ function toggleView() {
   }
 }
 
-// ── Persist API key in sessionStorage ──────────────────────────────
-const savedKey = sessionStorage.getItem('aerchain-api-key');
-if (savedKey) document.getElementById('apiKey').value = savedKey;
-document.getElementById('apiKey').addEventListener('change', (e) => {
-  sessionStorage.setItem('aerchain-api-key', e.target.value);
-});
 </script>
 
 </body>
