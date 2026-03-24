@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aerchain × Iron Mountain — Technical Architecture & Security</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:hsl(262 80% 55%);--blue:hsl(217 88% 58%);--green:hsl(152 68% 42%);--amber:hsl(38 92% 50%);--orange:hsl(14 72% 55%);--teal:hsl(174 65% 40%);
+  --fg:rgba(255,255,255,.95);--fg2:rgba(255,255,255,.78);--fg3:rgba(255,255,255,.50);
+  --glass:rgba(255,255,255,.04);--gb:rgba(255,255,255,.07);--gbh:rgba(255,255,255,.16);
+  --gp:linear-gradient(135deg,hsl(262 80% 55%),hsl(275 85% 58%));
+  --bg1:hsl(262 55% 18%);--bg2:hsl(270 45% 12%);--bg3:hsl(255 40% 10%);--bg4:hsl(245 35% 8%);
+  --body-bg:linear-gradient(145deg,var(--bg1),var(--bg2) 35%,var(--bg3) 70%,var(--bg4));
+  --nav-bg:linear-gradient(180deg,hsl(262 55% 16%/.96),hsl(262 55% 16%/.88));
+  --im-fill:white;
+}
+.light{
+  --fg:rgba(20,20,40,.92);--fg2:rgba(20,20,40,.72);--fg3:rgba(20,20,40,.45);
+  --glass:rgba(0,0,0,.03);--gb:rgba(0,0,0,.08);--gbh:rgba(0,0,0,.14);
+  --bg1:#f5f3ff;--bg2:#ede9fe;--bg3:#f0edf8;--bg4:#faf9fe;
+  --body-bg:linear-gradient(145deg,var(--bg1),var(--bg2) 35%,var(--bg3) 70%,var(--bg4));
+  --nav-bg:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.88));
+  --im-fill:#1a1a2e;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:'Montserrat',system-ui,sans-serif;background:var(--body-bg);background-attachment:fixed;color:var(--fg);font-size:16px;line-height:1.55;overflow-x:hidden;transition:background .4s,color .4s}
+.mono{font-family:'JetBrains Mono',monospace}
+@keyframes shine{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes metaPulse{0%,100%{box-shadow:0 0 6px hsl(152 68% 42%/.4)}50%{box-shadow:0 0 14px hsl(152 68% 42%/.7)}}
+@keyframes orbPulse{0%,100%{box-shadow:0 0 32px hsl(262 80% 55%/.2),0 0 64px hsl(262 80% 55%/.1)}50%{box-shadow:0 0 48px hsl(262 80% 55%/.3),0 0 96px hsl(262 80% 55%/.15)}}
+@keyframes flowDash{to{stroke-dashoffset:-30}}
+.page{max-width:1280px;margin:0 auto;padding:96px 48px 80px}
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:14px;padding:10px 32px;background:var(--nav-bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--gb);transition:background .4s}
+.nav img.logo-aer{height:22px;opacity:.9}
+.nav img.logo-im{height:20px;opacity:.75}
+.light .nav img.logo-aer{filter:brightness(0) saturate(0)}
+.nav-sep{width:1px;height:18px;background:var(--gb)}
+.nav-event{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)}
+.nav-links{display:flex;gap:4px;margin-left:auto}
+.nav-link{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);text-decoration:none;padding:5px 10px;border-radius:8px;border:1px solid transparent;transition:all .2s;display:flex;align-items:center;gap:5px}
+.nav-link:hover,.nav-link.active{background:var(--glass);color:var(--fg);border-color:var(--gb)}
+.nav-num{font-size:8px;font-weight:800;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+/* Theme toggle */
+.theme-toggle{display:flex;align-items:center;gap:6px;margin-left:12px;padding:4px;border-radius:20px;background:var(--glass);border:1px solid var(--gb)}
+.theme-btn{width:28px;height:28px;border-radius:50%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--fg3);transition:all .2s}
+.theme-btn.active{background:var(--gp);color:white}
+.theme-btn svg{width:14px;height:14px}
+/* Arrow nav */
+.arrow-nav{position:fixed;right:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:100}
+.arrow-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--gb);background:rgba(0,0,0,.35);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--fg3)}
+.light .arrow-btn{background:rgba(255,255,255,.7)}
+.arrow-btn:hover{background:rgba(255,255,255,.1);border-color:var(--gbh);color:var(--fg)}
+.arrow-btn svg{width:18px;height:18px}
+.arrow-dots{display:flex;flex-direction:column;gap:6px;align-items:center;margin:8px 0}
+.arrow-dot{width:6px;height:6px;border-radius:50%;background:var(--gb);cursor:pointer;transition:all .3s}
+.arrow-dot.active{background:var(--purple);height:16px;border-radius:3px}
+/* Gradient text */
+.gt{font-weight:600;background:linear-gradient(90deg,hsl(262 80% 60%),hsl(275 85% 82%) 35%,hsl(262 80% 60%) 55%,hsl(275 85% 82%));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shine 12s ease-in-out infinite}
+/* Eyebrow */
+.ey{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ey::before{content:'';width:16px;height:1.5px;border-radius:1px;flex-shrink:0;background:var(--gp)}
+.ey.p{color:hsl(262 80% 72%)}.ey.g{color:hsl(152 65% 62%)}.ey.b{color:hsl(217 85% 72%)}.ey.a{color:hsl(38 90% 64%)}.ey.o{color:hsl(14 70% 64%)}
+/* Section heading */
+.sh{margin-bottom:32px}
+.sh h2{font-size:46px;font-weight:300;letter-spacing:-.025em;line-height:1.1}
+.sh p{font-size:18px;color:var(--fg3);margin-top:8px;max-width:720px;line-height:1.6}
+.sdiv{height:1px;background:linear-gradient(90deg,var(--gb),transparent);margin-bottom:36px}
+/* Chapter header */
+.ch{margin-top:80px;margin-bottom:60px}
+.ch-ey{display:flex;align-items:center;gap:14px;margin-bottom:32px}
+.ch-num{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:7px 16px;border-radius:10px;background:hsl(262 80% 55%/.12);border:1px solid hsl(262 80% 55%/.28);color:hsl(262 80% 72%);display:inline-flex;align-items:center;gap:6px}
+.ch-num::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gp);box-shadow:0 0 6px hsl(262 80% 55%/.25);animation:metaPulse 2.4s ease-in-out infinite;flex-shrink:0}
+.ch-sep{width:32px;height:2px;border-radius:1px;background:var(--gp);flex-shrink:0}
+.ch-time{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3)}
+.ch h2{font-size:50px;font-weight:300;letter-spacing:-.025em;line-height:1.08}
+.ch h2 .gt{font-size:50px}
+.ch-sub{font-size:16px;color:var(--fg2);line-height:1.65;max-width:740px;margin-top:14px}
+.ch-sdiv{height:1px;background:linear-gradient(90deg,var(--gbh),var(--gb) 40%,transparent);margin-top:40px}
+.ch-break{height:1px;margin:120px 0 0;background:linear-gradient(90deg,transparent,var(--gb) 15%,var(--gbh) 50%,var(--gb) 85%,transparent)}
+/* Cards */
+.cg{display:grid;gap:16px}
+.cg2{grid-template-columns:1fr 1fr}.cg3{grid-template-columns:repeat(3,1fr)}.cg4{grid-template-columns:repeat(4,1fr)}.cg5{grid-template-columns:repeat(5,1fr)}
+.cd{padding:22px;border-radius:14px;border:1px solid var(--gb);position:relative;overflow:hidden;transition:all .3s}
+.cd::before{content:'';position:absolute;inset:0;background-image:radial-gradient(var(--gb) 1px,transparent 1px);background-size:20px 20px;pointer-events:none;border-radius:inherit}
+.cd::after{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:14px 14px 0 0}
+.cd:hover{border-color:var(--gbh);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.15)}
+.cd.p{background:linear-gradient(160deg,hsl(262 24% 15%/.6),hsl(262 16% 9%/.6))}.cd.p::after{background:var(--purple)}
+.cd.b{background:linear-gradient(160deg,hsl(217 24% 15%/.6),hsl(217 16% 9%/.6))}.cd.b::after{background:var(--blue)}
+.cd.g{background:linear-gradient(160deg,hsl(152 22% 14%/.6),hsl(152 14% 9%/.6))}.cd.g::after{background:var(--green)}
+.cd.am{background:linear-gradient(160deg,hsl(38 24% 14%/.6),hsl(38 14% 9%/.6))}.cd.am::after{background:var(--amber)}
+.cd.o{background:linear-gradient(160deg,hsl(14 24% 14%/.6),hsl(14 14% 9%/.6))}.cd.o::after{background:var(--orange)}
+.light .cd{background:rgba(255,255,255,.6);backdrop-filter:blur(8px)}
+.ci{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;z-index:1}
+.ci svg{width:19px;height:19px;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cd.p .ci{background:hsl(262 80% 55%/.1)}.cd.p .ci svg{stroke:hsl(262 80% 72%)}
+.cd.b .ci{background:hsl(217 88% 58%/.1)}.cd.b .ci svg{stroke:hsl(217 85% 72%)}
+.cd.g .ci{background:hsl(152 68% 42%/.1)}.cd.g .ci svg{stroke:hsl(152 65% 60%)}
+.cd.am .ci{background:hsl(38 92% 50%/.1)}.cd.am .ci svg{stroke:hsl(38 90% 64%)}
+.cd.o .ci{background:hsl(14 70% 52%/.1)}.cd.o .ci svg{stroke:hsl(14 68% 64%)}
+.ct{font-size:16px;font-weight:700;color:var(--fg);margin-bottom:6px;position:relative;z-index:1}
+.cx{font-size:13px;color:var(--fg2);line-height:1.6;position:relative;z-index:1}
+.cm{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--fg3);margin-bottom:8px;position:relative;z-index:1}
+/* Pills */
+.pl{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;position:relative;z-index:1;margin-top:8px}
+.pl::before{content:'';width:4px;height:4px;border-radius:50%}
+.pl.lv{background:hsl(152 68% 42%/.14);color:hsl(152 65% 60%);border:1px solid hsl(152 68% 42%/.2)}.pl.lv::before{background:var(--green)}
+.pl.rd{background:hsl(38 92% 50%/.12);color:hsl(38 90% 62%);border:1px solid hsl(38 92% 50%/.18)}.pl.rd::before{background:var(--amber)}
+.pl.bl{background:hsl(217 88% 58%/.12);color:hsl(217 85% 68%);border:1px solid hsl(217 88% 58%/.18)}.pl.bl::before{background:var(--blue)}
+.pl.pr{background:hsl(262 80% 55%/.12);color:hsl(262 75% 68%);border:1px solid hsl(262 80% 55%/.18)}.pl.pr::before{background:var(--purple)}
+/* Quote */
+.qt{background:linear-gradient(135deg,hsl(262 20% 14%/.65),hsl(255 14% 10%/.52));backdrop-filter:blur(20px);border:1px solid hsl(262 36% 44%/.13);border-radius:14px;padding:24px 28px;margin:28px 0;display:flex;align-items:flex-start;gap:14px;position:relative;overflow:hidden}
+.light .qt{background:rgba(255,255,255,.6)}
+.qt::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:var(--gp);opacity:.4}
+.qt-bar{width:3px;min-height:36px;border-radius:2px;background:var(--gp);flex-shrink:0;margin-top:2px}
+.qt-text{font-size:15px;color:var(--fg2);line-height:1.65}.qt-text b{font-weight:700;color:var(--fg)}
+/* Metrics */
+.mv{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ml{font-size:14px;font-weight:600;color:var(--fg2);margin-top:5px}
+.ms{font-size:11px;color:var(--fg3);margin-top:3px}
+/* Architecture */
+.arch-wrap{padding:32px;border-radius:16px;background:var(--glass);border:1px solid var(--gb);margin:28px 0;position:relative}
+.arch{display:grid;grid-template-columns:240px 1fr 240px;gap:0 32px;position:relative}
+.col-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;text-align:center;padding:7px 16px;border-radius:20px;margin-bottom:14px;display:block}
+.col-lbl.im{color:hsl(217 85% 72%);background:hsl(217 88% 58%/.08);border:1.5px solid hsl(217 88% 58%/.2)}
+.col-lbl.aer{color:hsl(262 80% 72%);background:hsl(262 80% 55%/.08);border:1.5px solid hsl(262 80% 55%/.2)}
+.col-lbl.out{color:hsl(152 65% 60%);background:hsl(152 68% 42%/.08);border:1.5px solid hsl(152 68% 42%/.2)}
+.sc{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;margin-bottom:7px;transition:all .25s;border:1.5px solid}
+.sc:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.si{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(255,255,255,.06)}
+.si svg{width:16px;height:16px;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.sn{font-size:12px;font-weight:700;color:var(--fg);line-height:1.25;text-transform:uppercase;letter-spacing:.02em}
+.sd{font-size:10px;color:var(--fg3);line-height:1.35;margin-top:1px}
+.sp{display:flex;gap:4px;margin-top:4px}
+.pr{font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:700;letter-spacing:.03em;padding:2px 6px;border-radius:3px;text-transform:uppercase}
+.sc.blue{background:hsl(217 28% 14%);border-color:hsl(217 55% 58%/.2)}.sc.blue .si{background:hsl(217 88% 58%/.08)}.sc.blue .si svg{stroke:hsl(217 85% 68%);stroke-width:1.7}
+.sc.green{background:hsl(152 22% 13%);border-color:hsl(152 50% 42%/.2)}.sc.green .si{background:hsl(152 68% 42%/.08)}.sc.green .si svg{stroke:hsl(152 65% 56%);stroke-width:1.7}
+.sc.purple{background:hsl(262 22% 14%);border-color:hsl(262 50% 55%/.2)}.sc.purple .si{background:hsl(262 80% 55%/.08)}.sc.purple .si svg{stroke:hsl(262 75% 68%);stroke-width:1.7}
+.sc.teal{background:hsl(174 20% 12%);border-color:hsl(174 50% 40%/.2)}.sc.teal .si{background:hsl(174 65% 40%/.08)}.sc.teal .si svg{stroke:hsl(174 60% 52%);stroke-width:1.7}
+.pr.blue{background:hsl(217 88% 58%/.1);color:hsl(217 85% 68%)}.pr.green{background:hsl(152 68% 42%/.1);color:hsl(152 65% 56%)}.pr.purple{background:hsl(262 80% 55%/.1);color:hsl(262 75% 68%)}
+.light .sc{background:rgba(255,255,255,.5)!important}
+/* Hub orb */
+.hub-wrap{display:flex;flex-direction:column;align-items:center}
+.hub-orb-wrap{position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.hub-glow{position:absolute;inset:15%;border-radius:50%;background:radial-gradient(circle,hsl(262 80% 55%/.12),transparent 70%);filter:blur(20px)}
+.hub-ring{position:absolute;border-radius:50%;border:1px solid;animation:orbPulse 4s ease-in-out infinite}
+.hub-ring.r3{inset:0;border-color:hsl(262 80% 55%/.06)}.hub-ring.r2{inset:15%;border-color:hsl(262 80% 55%/.1)}.hub-ring.r1{inset:30%;border-color:hsl(262 80% 55%/.15)}
+.hub-orb{position:absolute;inset:32%;border-radius:50%;background:linear-gradient(135deg,hsl(262 80% 48%),hsl(275 85% 52%));display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 40px hsl(262 80% 55%/.25);z-index:2}
+.hub-orb img{width:36px;height:36px}
+.hub-orb-text{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;color:rgba(255,255,255,.8);letter-spacing:.06em;margin-top:2px;text-transform:uppercase}
+/* Module chips */
+.mod-section{margin-bottom:16px}
+.mod-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.mod-label .dot{width:6px;height:6px;border-radius:50%}
+.mod-label.capp{color:hsl(262 75% 68%)}.mod-label.capp .dot{background:var(--purple)}
+.mod-label.sapp{color:hsl(152 60% 56%)}.mod-label.sapp .dot{background:var(--green)}
+.mod-label.ai{color:hsl(14 68% 62%)}.mod-label.ai .dot{background:var(--orange)}
+.mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+.mc{font-size:10px;font-weight:600;padding:8px 12px;border-radius:6px;text-align:left;border:1px solid;transition:all .2s;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.02em;width:100%}
+.mc svg{width:11px;height:11px;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.mc.capp{background:hsl(262 24% 14%);border-color:hsl(262 50% 55%/.15);color:hsl(262 75% 72%)}.mc.capp svg{stroke:hsl(262 75% 68%);stroke-width:1.5}
+.mc.sapp{background:hsl(152 20% 12%);border-color:hsl(152 50% 42%/.15);color:hsl(152 60% 58%)}.mc.sapp svg{stroke:hsl(152 60% 54%);stroke-width:1.5}
+.mc.ai{background:hsl(14 22% 12%);border-color:hsl(14 55% 52%/.15);color:hsl(14 65% 64%)}.mc.ai svg{stroke:hsl(14 62% 60%);stroke-width:1.5}
+/* Output cards */
+.oc{padding:13px;border-radius:11px;margin-bottom:7px;border:1.5px solid;display:flex;align-items:flex-start;gap:10px;transition:all .25s}
+.oc:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.oi{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.oi svg{width:16px;height:16px;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7}
+.on{font-size:12px;font-weight:700;color:var(--fg);line-height:1.25;text-transform:uppercase;letter-spacing:.02em}
+.ox{font-size:10px;color:var(--fg3);line-height:1.4;margin-top:2px}
+.ot{font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:700;padding:2px 6px;border-radius:3px;margin-top:5px;display:inline-block;text-transform:uppercase}
+.oc.green{background:hsl(152 20% 12%);border-color:hsl(152 50% 42%/.18)}.oc.green .oi{background:hsl(152 68% 42%/.08)}.oc.green .oi svg{stroke:hsl(152 65% 56%)}.oc.green .ot{background:hsl(152 68% 42%/.1);color:hsl(152 65% 56%)}
+.oc.blue{background:hsl(217 24% 13%);border-color:hsl(217 55% 58%/.18)}.oc.blue .oi{background:hsl(217 88% 58%/.08)}.oc.blue .oi svg{stroke:hsl(217 85% 68%)}.oc.blue .ot{background:hsl(217 88% 58%/.1);color:hsl(217 85% 68%)}
+.light .oc{background:rgba(255,255,255,.5)!important}
+/* SVG flows */
+.flow-svg{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
+.fl{fill:none;stroke-linecap:round;stroke-width:1.6;stroke-dasharray:7 7;animation:flowDash 2.2s linear infinite}
+.fg{fill:none;stroke-linecap:round;stroke-width:5;filter:blur(5px);opacity:.06}
+/* Tables */
+.tbl{width:100%;border-collapse:collapse;margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid var(--gb)}
+.tbl th{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:10px 14px;text-align:left;background:var(--glass);color:var(--fg2);border-bottom:1px solid var(--gb)}
+.tbl td{padding:10px 14px;font-size:12px;color:var(--fg2);border-bottom:1px solid rgba(255,255,255,.03);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .td-b{font-weight:700;color:var(--fg)}
+.tbl .td-m{font-family:'JetBrains Mono',monospace;font-size:10px}
+/* Security shields */
+.shield{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:12px;border:1px solid}
+.shield-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shield-icon svg{width:18px;height:18px;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5}
+.shield.g{background:hsl(152 20% 11%);border-color:hsl(152 50% 42%/.15)}.shield.g .shield-icon{background:hsl(152 68% 42%/.1)}.shield.g .shield-icon svg{stroke:hsl(152 65% 56%)}
+.shield.p{background:hsl(262 20% 12%);border-color:hsl(262 50% 55%/.15)}.shield.p .shield-icon{background:hsl(262 80% 55%/.1)}.shield.p .shield-icon svg{stroke:hsl(262 75% 68%)}
+.shield.b{background:hsl(217 22% 12%);border-color:hsl(217 55% 58%/.15)}.shield.b .shield-icon{background:hsl(217 88% 58%/.1)}.shield.b .shield-icon svg{stroke:hsl(217 85% 68%)}
+.shield.a{background:hsl(38 22% 11%);border-color:hsl(38 65% 48%/.15)}.shield.a .shield-icon{background:hsl(38 92% 50%/.1)}.shield.a .shield-icon svg{stroke:hsl(38 88% 60%)}
+.light .shield{background:rgba(255,255,255,.5)!important}
+.shield-title{font-size:13px;font-weight:700;color:var(--fg)}
+.shield-desc{font-size:11px;color:var(--fg3);margin-top:2px}
+/* Agenda */
+.agenda-item{display:flex;align-items:flex-start;gap:16px;padding:18px 0;border-bottom:1px solid var(--gb)}
+.agenda-item:last-child{border-bottom:none}
+.agenda-num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:800;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;min-width:42px}
+.agenda-title{font-size:16px;font-weight:700;color:var(--fg);margin-bottom:3px}
+.agenda-desc{font-size:12px;color:var(--fg3)}
+/* Team */
+.team-card{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:11px;background:var(--glass);border:1px solid var(--gb)}
+.team-avatar{width:38px;height:38px;border-radius:50%;background:var(--gp);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0}
+.team-name{font-size:13px;font-weight:700;color:var(--fg)}
+.team-role{font-size:10px;color:var(--fg3);margin-top:1px}
+/* Footer */
+.footer{text-align:center;padding:56px;border-top:1px solid var(--gb);margin-top:120px}
+.footer-text{font-size:14px;color:var(--fg3)}.footer-text b{color:var(--fg2)}
+.section{min-height:auto;position:relative;padding:0}
+@media(max-width:1024px){.cg3,.cg4,.cg5{grid-template-columns:1fr 1fr}.arch{grid-template-columns:1fr}.arrow-nav{display:none}}
+@media(max-width:768px){.page{padding:80px 20px 40px}.sh h2,.ch h2{font-size:34px}.cg2,.cg3,.cg4,.cg5{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <img class="logo-aer" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTY4IiBoZWlnaHQ9IjMyIiB2aWV3Qm94PSIwIDAgMTY4IDMyIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfMTY0NTVfMTEwNDA4KSI+CjxwYXRoIGQ9Ik0zLjc5NTEgMjYuOTg5NUMzLjYxMzk2IDI3LjM5MzcgMy40MzI4MiAyNy42NjE2IDMuMjU0IDI3Ljc5NTZDMy4wNzI4NiAyNy45Mjk1IDIuODAxMTUgMjcuOTk3NyAyLjQ0MTE5IDI3Ljk5NzdIMC42Nzg1NjlDMC4yMjU3MjEgMjcuOTk3NyAwLjAwMDQ1Nzc2NCAyNy44NTIgMC4wMDA0NTc3NjQgMjcuNTYwNkMwLjAwMDQ1Nzc2NCAyNy40NDc4IDAuMDU2MTkzIDI3LjI1NzQgMC4xNjk5ODYgMjYuOTg5NUwxMC4zNjcyIDUuNjgwMjFDMTAuNzA2MyA0Ljk4Njk4IDEwLjk1NDcgNC41MzEwOSAxMS4xMTI3IDQuMzE5NTlDMTEuMjcwNiA0LjEwNTc1IDExLjQ2MzMgNCAxMS42ODg2IDRDMTEuODkzIDQgMTIuMDY3MSA0LjEwNTc1IDEyLjIxMzQgNC4zMTk1OUMxMi4zNTk3IDQuNTMzNDQgMTIuNjAzNiA0Ljk4Njk4IDEyLjk0MjYgNS42ODAyMUwyMy4yNDIgMjYuOTg5NUMyMy4zNTU4IDI3LjI1NzQgMjMuNDExNiAyNy40NTAxIDIzLjQxMTYgMjcuNTYwNkMyMy40MTE2IDI3Ljg1MiAyMy4xNzQ3IDI3Ljk5NzcgMjIuNzAwOSAyNy45OTc3SDIwLjgwMzZDMjAuNDQxMyAyNy45OTc3IDIwLjE3NjYgMjcuOTI5NSAyMC4wMDcxIDI3Ljc5NTZDMTkuODM3NSAyNy42NjE2IDE5LjY1MTggMjcuMzkxNCAxOS40NDc0IDI2Ljk4OTVMMTEuNjIxMiAxMC4yNTA5TDMuNzk1MSAyNi45ODk1WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQwLjUyMjEgMjQuODk1N0M0MC42MzU5IDI0Ljk5OTEgNDAuNjkxNiAyNS4xOTg5IDQwLjY5MTYgMjUuNDk1VjI3LjI0MzNDNDAuNjkxNiAyNy41NDE4IDQwLjYzNTkgMjcuNzQxNSA0MC41MjIxIDI3Ljg0MjZDNDAuNDA4MyAyNy45NDYgNDAuMjE3OSAyNy45OTc3IDM5Ljk0NjIgMjcuOTk3N0gyNy4xMDYyQzI2LjgzNDUgMjcuOTk3NyAyNi42NDQgMjcuOTQ2IDI2LjUzMDIgMjcuODQyNkMyNi40MTY1IDI3LjczOTIgMjYuMzYwNyAyNy41Mzk0IDI2LjM2MDcgMjcuMjQzM1Y0Ljc1NDMzQzI2LjM2MDcgNC40NTgyNCAyNi40MTY1IDQuMjU2MTQgMjYuNTMwMiA0LjE1NTFDMjYuNjQxNyA0LjA1MTcgMjYuODM0NSA0IDI3LjEwMzkgNEgzOS45MTEzQzQwLjE4MyA0IDQwLjM3MzUgNC4wNTE3IDQwLjQ4NzMgNC4xNTUxQzQwLjYwMTEgNC4yNTg0OSA0MC42NTY4IDQuNDU4MjQgNDAuNjU2OCA0Ljc1NDMzVjYuNTAyNjlDNDAuNjU2OCA2LjgwMTE0IDQwLjYwMTEgNy4wMDA4OCA0MC40ODczIDcuMTAxOTNDNDAuMzczNSA3LjIwNTMzIDQwLjE4MyA3LjI1NzAzIDM5LjkxMTMgNy4yNTcwM0gzMC4xNTNDMjkuOTk1MSA3LjI1NzAzIDI5Ljg4ODMgNy4yODUyMyAyOS44MzAyIDcuMzQxNjJDMjkuNzc0NSA3LjM5ODAyIDI5Ljc0NjYgNy40OTY3MiAyOS43NDY2IDcuNjMzMDJWMTMuOTA3NEMyOS43NDY2IDE0LjA2NzIgMjkuNzc0NSAxNC4xNzUzIDI5LjgzMDIgMTQuMjM0QzI5Ljg4NiAxNC4yOTA0IDI5Ljk5MjggMTQuMzE4NiAzMC4xNTMgMTQuMzE4NkgzOC43NTk1QzM5LjAzMTIgMTQuMzE4NiAzOS4yMjE2IDE0LjM3MDMgMzkuMzM1NCAxNC40NzM3QzM5LjQ0OTIgMTQuNTc3MSAzOS41MDQ5IDE0Ljc3NjkgMzkuNTA0OSAxNS4wNzI5VjE2Ljc4NjFDMzkuNTA0OSAxNy4wNjEgMzkuNDQ5MiAxNy4yNTM3IDM5LjMzNTQgMTcuMzY4OEMzOS4yMjE2IDE3LjQ4NCAzOS4wMzEyIDE3LjU0MDQgMzguNzU5NSAxNy41NDA0SDMwLjE1M0MyOS45OTUxIDE3LjU0MDQgMjkuODg4MyAxNy41Njg2IDI5LjgzMDIgMTcuNjI1QzI5Ljc3NDUgMTcuNjgxNCAyOS43NDY2IDE3Ljc4MDEgMjkuNzQ2NiAxNy45MTY0VjI0LjM2MjNDMjkuNzQ2NiAyNC40OTg2IDI5Ljc3NDUgMjQuNTk3MyAyOS44MzAyIDI0LjY1MzdDMjkuODg2IDI0LjcxMDEgMjkuOTkyOCAyNC43MzgzIDMwLjE1MyAyNC43MzgzSDM5Ljk0MzhDNDAuMjE1NiAyNC43MzgzIDQwLjQwNiAyNC43OSA0MC41MTk4IDI0Ljg5MzRMNDAuNTIyMSAyNC44OTU3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQ4LjcxOTggMjcuODQ0OUM0OC42MDYgMjcuOTQ4MyA0OC40MTU2IDI4IDQ4LjE0MzkgMjhINDYuMjQ2NkM0NS45NzQ4IDI4IDQ1Ljc4NDQgMjcuOTQ4MyA0NS42NzA2IDI3Ljg0NDlDNDUuNTU2OCAyNy43NDE1IDQ1LjUwMTEgMjcuNTQxOCA0NS41MDExIDI3LjI0NTdWNC43NTQzM0M0NS41MDExIDQuNDU4MjQgNDUuNTU2OCA0LjI1NjE0IDQ1LjY3MDYgNC4xNTUxQzQ1Ljc4NDQgNC4wNTE3IDQ1Ljk3NzIgNCA0Ni4yNDY2IDRINTIuNzE4OEM1OS4xNTYyIDQgNjIuMzc0OSA2LjQ3OTE5IDYyLjM3NDkgMTEuNDM5OUM2Mi4zNzQ5IDEzLjA4NDkgNjEuOTY4NSAxNC40NDA4IDYxLjE1NTcgMTUuNTAzQzYwLjM0MjkgMTYuNTY1MiA1OS4yMTIgMTcuMzUgNTcuNzY3NSAxNy44NTA2TDYzLjU5NDEgMjYuOTcwN0M2My43NzUzIDI3LjIyMjIgNjMuODY1OSAyNy40Mzg0IDYzLjg2NTkgMjcuNjIxN0M2My44NjU5IDI3Ljc1OCA2My44MDMxIDI3Ljg1NjcgNjMuNjgwMSAyNy45MTMxQzYzLjU1NDcgMjcuOTY5NSA2My4zNjg5IDI3Ljk5NzcgNjMuMTIwNCAyNy45OTc3SDYxLjEyMDlDNjAuNzM3NyAyNy45OTc3IDYwLjQ1NDQgMjcuOTQxMyA2MC4yNzMzIDI3LjgyNjFDNjAuMDkyMSAyNy43MTEgNTkuODc4NSAyNy40NjE5IDU5LjYzIDI3LjA3MThMNTMuMzk2OSAxNy4wNjFDNTMuMjYyMiAxNi44Nzc3IDUzLjE5MjYgMTYuNzE3OSA1My4xOTI2IDE2LjU4MTZDNTMuMTkyNiAxNi4zOTgzIDUzLjM2MjEgMTYuMjk0OSA1My43MDExIDE2LjI3MzhDNTcuMTEyNiAxNS45MDk1IDU4LjgxNzIgMTQuMzY1NiA1OC44MTcyIDExLjY0NDRDNTguODE3MiAxMC4wOTExIDU4LjI4MDcgOC45NTM2OSA1Ny4yMDc4IDguMjMyMjVDNTYuMTM0OSA3LjUxMzE3IDU0LjU4MTMgNy4xNTEyOCA1Mi41NDkzIDcuMTUxMjhINDkuMjk1N0M0OS4xMzc4IDcuMTUxMjggNDkuMDMxIDcuMTc5NDggNDguOTcyOSA3LjIzNTg4QzQ4LjkxNzIgNy4yOTIyNyA0OC44ODkzIDcuNDAyNzIgNDguODg5MyA3LjU2MjUyVjI3LjI0MUM0OC44ODkzIDI3LjUzOTQgNDguODMzNiAyNy43MzkyIDQ4LjcxOTggMjcuODQwMlYyNy44NDQ5WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTg0LjU5OTEgMjIuNDQ3MUM4NC44NDc2IDIyLjI0NzMgODUuMDQwNCAyMi4xNDg2IDg1LjE3NTEgMjIuMTQ4NkM4NS4yNjU2IDIyLjE0ODYgODUuMzU2MiAyMi4xODE1IDg1LjQ0NjggMjIuMjQ3M0M4NS41Mzc0IDIyLjMxMzEgODUuNjE2MyAyMi4zOTA3IDg1LjY4MzcgMjIuNDhMODYuNjY2IDIzLjgxQzg2Ljc3OTggMjMuOTQ0IDg2LjgzNTUgMjQuMDk5MSA4Ni44MzU1IDI0LjI3NTNDODYuODM1NSAyNC4zNjQ2IDg2LjgwMDcgMjQuNDU4NiA4Ni43MzMzIDI0LjU1NzNDODYuNjY2IDI0LjY1NiA4Ni41NjM4IDI0Ljc2MTggODYuNDI5MSAyNC44NzIyQzg1LjIzMDggMjUuODY4NiA4My44ODE1IDI2LjYzOTQgODIuMzgxMyAyNy4xODIyQzgwLjg3ODggMjcuNzI1MSA3OS4zMDQzIDI3Ljk5NzcgNzcuNjU1NSAyNy45OTc3Qzc1LjQ0MjMgMjcuOTk3NyA3My40MTUgMjcuNDg3NyA3MS41NzM0IDI2LjQ2NzhDNjkuNzMxOCAyNS40NDggNjguMjc1NyAyNC4wMzA5IDY3LjIwMjggMjIuMjEyMUM2Ni4xMjk5IDIwLjM5NTYgNjUuNTkzNCAxOC4zNTU4IDY1LjU5MzQgMTYuMDk1MkM2NS41OTM0IDEzLjgzNDUgNjYuMTI5OSAxMS43NTI1IDY3LjIwMjggOS45MTI0N0M2OC4yNzU3IDguMDcyNDYgNjkuNzQzNCA2LjYyNzI0IDcxLjYwODIgNS41NzQ0NkM3My40NzA3IDQuNTI2MzkgNzUuNTUzOCA0IDc3Ljg1NzUgNEM3OS40ODMxIDQgODEuMDM2NyA0LjI3NzI5IDgyLjUxNiA0LjgzMTg4QzgzLjk5NTMgNS4zODY0NyA4NS4zMTIxIDYuMTQwOCA4Ni40NjQgNy4wOTI1M0M4Ni42ODkyIDcuMjQ3NjMgODYuODAzIDcuNDE0NDcgODYuODAzIDcuNTkwNzJDODYuODAzIDcuNzQ1ODEgODYuNzM1NyA3LjkyMjA2IDg2LjU5ODYgOC4xMjE4MUw4NS42MTYzIDkuNDE4OThDODUuNDM1MiA5LjY2MzM3IDg1LjI1NCA5Ljc4NTU3IDg1LjA3NTIgOS43ODU1N0M4NC45NDA1IDkuNzg1NTcgODQuNzQ3OCA5LjY5NjI3IDg0LjQ5OTMgOS41MjAwMkM4My41Mjg2IDguNzg5MTkgODIuNDc2NiA4LjIxMzQ1IDgxLjM0NzkgNy43OTA0NkM4MC4yMTkzIDcuMzY5ODIgNzkuMDMyNiA3LjE1ODMzIDc3Ljc5MDIgNy4xNTgzM0M3Ni4xODU1IDcuMTU4MzMgNzQuNzI0NyA3LjUzNDMyIDczLjQwMzMgOC4yODg2NUM3Mi4wODE5IDkuMDQyOTggNzEuMDM2OSAxMC4wOTU4IDcwLjI2ODIgMTEuNDQ3QzY5LjQ5OTUgMTIuNzk4MiA2OS4xMTY0IDE0LjMyOCA2OS4xMTY0IDE2LjAzNDFDNjkuMTE2NCAxNy43NDAxIDY5LjQ5NDkgMTkuMTY4OSA3MC4yNTIgMjAuNTIyNUM3MS4wMDkgMjEuODczNyA3Mi4wNDcxIDIyLjkzMzUgNzMuMzY4NSAyMy42OTczQzc0LjY4OTkgMjQuNDYxIDc2LjE2NDYgMjQuODQ0IDc3Ljc5MDIgMjQuODQ0QzgwLjM0MjQgMjQuODQ0IDgyLjYxMTMgMjQuMDQ3NCA4NC41OTkxIDIyLjQ1MThWMjIuNDQ3MVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xMDkuNDAxIDI3Ljg0NDlDMTA5LjI4OCAyNy45NDgzIDEwOS4wOTcgMjggMTA4LjgyNiAyOEgxMDYuOTI4QzEwNi42NTcgMjggMTA2LjQ2NiAyNy45NDgzIDEwNi4zNTIgMjcuODQ0OUMxMDYuMjM4IDI3Ljc0MTUgMTA2LjE4MyAyNy41NDE4IDEwNi4xODMgMjcuMjQ1N1YxNy42ODE0QzEwNi4xODMgMTcuNTQ1MSAxMDYuMTU1IDE3LjQ0NjQgMTA2LjA5OSAxNy4zOUMxMDYuMDQzIDE3LjMzMzYgMTA1LjkzNCAxNy4zMDU0IDEwNS43NzYgMTcuMzA1NEg5NC41NjJDOTQuNDA0MSAxNy4zMDU0IDk0LjI5NzIgMTcuMzMzNiA5NC4yMzkyIDE3LjM5Qzk0LjE4MzQgMTcuNDQ2NCA5NC4xNTU2IDE3LjU0NTEgOTQuMTU1NiAxNy42ODE0VjI3LjI0NTdDOTQuMTU1NiAyNy41NDQxIDk0LjA5OTggMjcuNzQzOSA5My45ODYgMjcuODQ0OUM5My44NzIyIDI3Ljk0ODMgOTMuNjgxOCAyOCA5My40MTAxIDI4SDkxLjUxMjhDOTEuMjQxMSAyOCA5MS4wNTA3IDI3Ljk0ODMgOTAuOTM2OSAyNy44NDQ5QzkwLjgyMzEgMjcuNzQxNSA5MC43NjczIDI3LjU0MTggOTAuNzY3MyAyNy4yNDU3VjQuNzU0MzNDOTAuNzY3MyA0LjQ1ODI0IDkwLjgyMzEgNC4yNTYxNCA5MC45MzY5IDQuMTU1MUM5MS4wNDgzIDQuMDUxNyA5MS4yNDExIDQgOTEuNTEwNSA0SDkzLjQwNzhDOTMuNjc5NSA0IDkzLjg3MjMgNC4wNTE3IDkzLjk4MzcgNC4xNTUxQzk0LjA5NzUgNC4yNTg0OSA5NC4xNTMyIDQuNDU4MjQgOTQuMTUzMiA0Ljc1NDMzVjEzLjY2NzdDOTQuMTUzMiAxMy44MDQgOTQuMTgxMSAxMy45MDc0IDk0LjIzNjkgMTMuOTc1NUM5NC4yOTI2IDE0LjA0MzcgOTQuMzk5NCAxNC4wNzg5IDk0LjU1OTYgMTQuMDc4OUgxMDUuNzc0QzEwNS45MzIgMTQuMDc4OSAxMDYuMDM5IDE0LjA0MzcgMTA2LjA5NyAxMy45NzU1QzEwNi4xNTMgMTMuOTA3NCAxMDYuMTggMTMuODA0IDEwNi4xOCAxMy42Njc3VjQuNzU0MzNDMTA2LjE4IDQuNDU4MjQgMTA2LjIzNiA0LjI1NjE0IDEwNi4zNSA0LjE1NTFDMTA2LjQ2NCA0LjA1MTcgMTA2LjY1NyA0IDEwNi45MjggNEgxMDguODI2QzEwOS4wOTUgNCAxMDkuMjg4IDQuMDUxNyAxMDkuNDAxIDQuMTU1MUMxMDkuNTE1IDQuMjU4NDkgMTA5LjU3MSA0LjQ1ODI0IDEwOS41NzEgNC43NTQzM1YyNy4yNDU3QzEwOS41NzEgMjcuNTQ0MSAxMDkuNTE1IDI3Ljc0MzkgMTA5LjQwMSAyNy44NDQ5WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTE2NC4yNTIgNC4xNTA0QzE2NC4zNjYgNC4wNDkzNSAxNjQuNTU4IDQgMTY0LjgyOCA0SDE2Ni43MjVDMTY2Ljk5NyA0IDE2Ny4xODkgNC4wNDkzNSAxNjcuMzAxIDQuMTUwNEMxNjcuNDE1IDQuMjQ5MDkgMTY3LjQ3IDQuNDQ0MTQgMTY3LjQ3IDQuNzMzMThWMjYuOTA0OUMxNjcuNDcgMjcuNjM1OCAxNjcuMjQ1IDI4LjAwMjMgMTY2Ljc5MiAyOC4wMDIzQzE2Ni42MTEgMjguMDAyMyAxNjYuNDIxIDI3LjkyOTUgMTY2LjIxNiAyNy43ODYyQzE2Ni4wMTIgMjcuNjQyOCAxNjUuNzMxIDI3LjM3MDIgMTY1LjM2OSAyNi45NzA3TDE1MS42MTQgMTEuMDQ5OFYyNi45MDQ5QzE1MS42MTQgMjcuMTk0IDE1MS41NTggMjcuMzg2NyAxNTEuNDQ0IDI3LjQ4NzdDMTUxLjMzIDI3LjU4NjQgMTUxLjE0IDI3LjYzODEgMTUwLjg2OCAyNy42MzgxSDE0OC45NzFDMTQ4LjY5OSAyNy42MzgxIDE0OC41MDkgMjcuNTg4OCAxNDguMzk1IDI3LjQ4NzdDMTQ4LjI4MSAyNy4zODkgMTQ4LjIyNiAyNy4xOTQgMTQ4LjIyNiAyNi45MDQ5VjUuMDk3NDJDMTQ4LjIyNiA0LjcyMTQzIDE0OC4yODEgNC40NDQxNCAxNDguMzk1IDQuMjY1NTRDMTQ4LjUwOSA0LjA4OTMgMTQ4LjY5IDQgMTQ4LjkzOSA0QzE0OS4xMiA0IDE0OS4zMSA0LjA3Mjg1IDE0OS41MTQgNC4yMTYyQzE0OS43MTkgNC4zNTk1NCAxNDkuOTg4IDQuNjMyMTQgMTUwLjMyNyA1LjAzMTYzTDE2NC4wODIgMjAuOTUyNVY0LjczMDgzQzE2NC4wODIgNC40NDQxNCAxNjQuMTM4IDQuMjQ5MDkgMTY0LjI1MiA0LjE0ODA1VjQuMTUwNFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xNDMuNzMyIDE4LjcwODNDMTQzLjcyIDE4LjY1MTkgMTQzLjcwNCAxOC40OTQ0IDE0My42OTkgMTguNDE5M0MxNDMuNzA0IDE4LjQzNTcgMTQzLjczIDE4LjY3NTQgMTQzLjczMiAxOC43MDgzWiIgZmlsbD0iI0RDNUY0MCIvPgo8cGF0aCBkPSJNMTQxLjYxMyAxMS4wOEMxNDIuNjk4IDEwLjk2MDIgMTQzLjQ4MyA5Ljk3MzIgMTQzLjM2NCA4Ljg3MzQyQzE0My4yNDYgNy43NzYgMTQyLjI3IDYuOTgxNzEgMTQxLjE4NCA3LjEwMTU2QzE0MC4wOTkgNy4yMjE0MSAxMzkuMzE0IDguMjA4MzkgMTM5LjQzMyA5LjMwODE2QzEzOS41NTEgMTAuNDA1NiAxNDAuNTI2IDExLjE5OTkgMTQxLjYxMyAxMS4wOFoiIGZpbGw9IiNEQzVGNDAiLz4KPHBhdGggZD0iTTE0My44NTcgMjAuNjI1NEMxNDMuOTQzIDE2LjE2OTkgMTQyLjA5MiAxMC43Njc0IDEzNy4yNTIgMTMuODM2NEMxMzYuODQ2IDEzLjk5NjIgMTM2LjYxNCAxMy45Mzk4IDEzNi40IDEzLjYzNDNDMTM1Ljc4OSAxMi41MTU4IDEzNS4zMiAxMS4zNzEzIDEzNC43MzkgMTAuMTk2NEMxMzAuMzcxIC0xLjE3NTAxIDEyNS4zODMgNS4zMjcyOSAxMjAuMTE0IDEyLjA1NzVDMTA4LjM0NyAyNy40NDk3IDExMy44OSAzNC4yNjY5IDEzMi40MzggMjAuNzVDMTMzLjA4NiAyMC4yODQ3IDEzNC4zODQgMTkuMzExOCAxMzQuODUxIDE5LjI3MTlDMTM1LjM0MyAxOS4xOTIgMTM1LjU0OCAxOS41OTYyIDEzNS45MTkgMjAuNDQyMUMxMzYuMjc5IDIxLjMwOTMgMTM2Ljg3OCAyMi41MzgzIDEzNy40MjYgMjMuNDE0OEMxNDAuNTkyIDI5LjYzMDQgMTQ0LjA5OCAyOC4xODk5IDE0My44NTkgMjAuNjUxM1YyMC42MjU0SDE0My44NTdaTTEyOS45MDkgMTguMzA4NEMxMjcuNTc1IDE5Ljc4NDIgMTI1LjM2IDIxLjU5MTMgMTIyLjc5NiAyMi42Njk5QzEyMS42NzkgMjMuMTQyMiAxMjAuMDUxIDIyLjYyMDUgMTE5LjY0OSAyMS43MDY0QzExOS4xOTQgMjAuMjg5NCAxMjAuODIyIDE4LjIwMDMgMTIxLjYyMSAxNi43MjkyQzEyMi41NDcgMTUuMDUzNyAxMjMuNzc2IDEzLjU2MzggMTI0Ljk1MyAxMi4wNDU4QzEyNi4wOTYgMTAuNTQ4OSAxMjcuNjQ3IDguMzI4MTcgMTI5Ljc5OCA5LjI5ODdDMTMxLjUyMyAxMC4yOTA0IDEzMi4yMzEgMTMuMDMyOCAxMzMuMjE4IDE0LjY4NzFDMTMzLjY2NCAxNS40MDM5IDEzMy42NSAxNS45MTE0IDEzMi44NyAxNi4zNDM4QzEzMS45MjUgMTYuOTUyNSAxMzAuOTAxIDE3LjY0NTcgMTI5LjkyOCAxOC4yOTlMMTI5LjkwOSAxOC4zMTA3VjE4LjMwODRaTTE0Mi41NTYgMjEuMjQzNUMxNDIuNTA1IDIyLjA5NjUgMTQyLjM0NSAyNS4zMjMgMTQxLjI3IDIzLjc4NjFDMTQwLjI3MSAyMS44ODc0IDEzOS4xNzUgMTkuNTIxIDEzOC4xOTcgMTcuNDk3N0MxMzcuODE3IDE2LjQ2MzcgMTQwLjE5MiAxNi4wNDU0IDE0MC44MSAxNi4yMjE2QzE0Mi41MzUgMTYuODY1NSAxNDIuNTk2IDE5LjYxOTcgMTQyLjU1NiAyMS4yMjk0VjIxLjI0NThWMjEuMjQzNVoiIGZpbGw9IiNEQzVGNDAiLz4KPC9nPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSJjbGlwMF8xNjQ1NV8xMTA0MDgiPgo8cmVjdCB3aWR0aD0iMTY4IiBoZWlnaHQ9IjMyIiBmaWxsPSJ3aGl0ZSIvPgo8L2NsaXBQYXRoPgo8L2RlZnM+Cjwvc3ZnPgo=" alt="Aerchain" height="22">
+  <div class="nav-sep"></div>
+  <img class="logo-im" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI0LjIuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAyMDguOSA1OC45IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCAyMDguOSA1OC45OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+Cgkuc3Qwe29wYWNpdHk6MC43NTtmaWxsOiMxMzQ4N0Q7fQoJLnN0MXtvcGFjaXR5OjAuNzU7ZmlsbDojMUM3NUJDO30KCS5zdDJ7b3BhY2l0eTowLjc1O2ZpbGw6IzZEQ0ZGNjt9Cjwvc3R5bGU+CjxnPgoJPGc+CgkJPHBvbHlnb24gY2xhc3M9InN0MCIgcG9pbnRzPSIyNC40LDE0LjMgMzYuNSwzNCA0OC43LDUzLjcgMjQuNCw1My43IDAsNTMuNyAxMi4yLDM0IAkJIi8+CgkJPHBvbHlnb24gY2xhc3M9InN0MSIgcG9pbnRzPSI0Mi45LDAgNTUuMSwyNi45IDY3LjMsNTMuNyA0Mi45LDUzLjcgMTguNSw1My43IDMwLjcsMjYuOSAJCSIvPgoJCTxwb2x5Z29uIGNsYXNzPSJzdDIiIHBvaW50cz0iMzMuNiw3LjcgNDUuOCwzMC43IDU4LDUzLjcgMzMuNiw1My43IDkuMyw1My43IDIxLjUsMzAuNyAJCSIvPgoJPC9nPgoJPGc+CgkJPHJlY3QgeD0iNzMuMSIgeT0iNy43IiB3aWR0aD0iMS40IiBoZWlnaHQ9IjE3LjEiLz4KCQk8cGF0aCBkPSJNODgsMTYuOGMyLjYtMC40LDQuMS0yLDQuMS00LjVjMC0yLjgtMi00LjYtNS4zLTQuNmgtNy42djE3LjFoMS40di03LjloNS43bDUuNSw3LjhsMCwwLjFoMS43TDg4LDE2Ljh6IE04MC42LDloNi4xCgkJCWMyLjUsMCwzLjksMS4yLDMuOSwzLjNjMCwyLjEtMS40LDMuMy0zLjksMy4zaC02LjFWOXoiLz4KCQk8cGF0aCBkPSJNMTAzLjksNy40Yy00LjksMC04LjUsMy44LTguNSw4LjhjMCw1LDMuNyw4LjgsOC41LDguOGM0LjgsMCw4LjUtMy44LDguNS04LjhDMTEyLjQsMTEuMiwxMDguOCw3LjQsMTAzLjksNy40egoJCQkgTTEwMy45LDIzLjdjLTQsMC03LjEtMy4yLTcuMS03LjVjMC00LjIsMy03LjQsNy4xLTcuNGM0LDAsNywzLjIsNyw3LjRDMTExLDIwLjUsMTA4LDIzLjcsMTAzLjksMjMuN3oiLz4KCQk8cG9seWdvbiBwb2ludHM9IjEyOC43LDIyLjIgMTE3LjUsNy43IDExNy41LDcuNyAxMTYuMyw3LjcgMTE2LjMsMjQuOCAxMTcuNywyNC44IDExNy43LDEwLjIgMTI4LjksMjQuNyAxMjguOSwyNC44IDEzMC4xLDI0LjggCgkJCTEzMC4xLDcuNyAxMjguNyw3LjcgCQkiLz4KCQk8cG9seWdvbiBwb2ludHM9IjgwLjcsNDUgNzQuMywzNi42IDc0LjMsMzYuNiA3Mi45LDM2LjYgNzIuOSw1My42IDc0LjMsNTMuNiA3NC4zLDM4LjkgODAuMiw0Ni42IDgwLjMsNDYuNiA4MS4xLDQ2LjYgODcsMzguOSAKCQkJODcsNTMuNiA4OC41LDUzLjYgODguNSwzNi42IDg3LjEsMzYuNiAJCSIvPgoJCTxwYXRoIGQ9Ik0xMDAuOCwzNi4zYy00LjksMC04LjUsMy44LTguNSw4LjhjMCw1LDMuNyw4LjgsOC41LDguOGM0LjgsMCw4LjUtMy44LDguNS04LjhDMTA5LjMsNDAuMSwxMDUuNywzNi4zLDEwMC44LDM2LjN6CgkJCSBNMTAwLjgsNTIuNmMtNCwwLTcuMS0zLjItNy4xLTcuNWMwLTQuMiwzLTcuNCw3LjEtNy40YzQsMCw3LDMuMiw3LDcuNEMxMDcuOCw0OS40LDEwNC44LDUyLjYsMTAwLjgsNTIuNnoiLz4KCQk8cGF0aCBkPSJNMTI1LjIsNDYuM2MwLDMuOS0yLDYuMi01LjQsNi4yYy0zLjQsMC01LjQtMi4zLTUuNC02LjJ2LTkuOGgtMS40djkuOGMwLDQuNywyLjYsNy42LDYuOSw3LjZjNC4yLDAsNi45LTIuOSw2LjktNy42di05LjgKCQkJaC0xLjRWNDYuM3oiLz4KCQk8cG9seWdvbiBwb2ludHM9IjE0My4zLDUxLjEgMTMyLjEsMzYuNiAxMzIuMSwzNi42IDEzMC45LDM2LjYgMTMwLjksNTMuNiAxMzIuMyw1My42IDEzMi4zLDM5LjEgMTQzLjUsNTMuNiAxNDMuNSw1My42IAoJCQkxNDQuNyw1My42IDE0NC43LDM2LjYgMTQzLjMsMzYuNiAJCSIvPgoJCTxwb2x5Z29uIHBvaW50cz0iMTYxLjEsMzYuNiAxNDcuNiwzNi42IDE0Ny42LDM3LjkgMTUzLjcsMzcuOSAxNTMuNyw1My42IDE1NS4xLDUzLjYgMTU1LjEsMzcuOSAxNjEuMSwzNy45IAkJIi8+CgkJPHBhdGggZD0iTTE2OC44LDM2LjVoLTEuM2wtNy43LDE3bC0wLjEsMC4yaDEuNWwyLjItNC45aDkuM2wyLjIsNC45aDEuNUwxNjguOCwzNi41TDE2OC44LDM2LjV6IE0xNzIuMiw0Ny40aC04LjJsNC4xLTkKCQkJTDE3Mi4yLDQ3LjR6Ii8+CgkJPHJlY3QgeD0iMTc5LjQiIHk9IjM2LjYiIHdpZHRoPSIxLjQiIGhlaWdodD0iMTcuMSIvPgoJCTxwb2x5Z29uIHBvaW50cz0iMTk3LjksNTEuMSAxODYuOCwzNi42IDE4Ni44LDM2LjYgMTg1LjUsMzYuNiAxODUuNSw1My42IDE4Nyw1My42IDE4NywzOS4xIDE5OC4xLDUzLjYgMTk4LjIsNTMuNiAxOTkuNCw1My42IAoJCQkxOTkuNCwzNi42IDE5Ny45LDM2LjYgCQkiLz4KCQk8cGF0aCBkPSJNMjA1LjIsMzUuNWMtMS43LDAtMy4yLDEuNC0zLjIsMy4yczEuNCwzLjIsMy4yLDMuMmMxLjgsMCwzLjItMS40LDMuMi0zLjJDMjA4LjQsMzcsMjA3LDM1LjUsMjA1LjIsMzUuNXogTTIwNS4yLDQxLjQKCQkJYy0xLjUsMC0yLjctMS4yLTIuNy0yLjdjMC0xLjUsMS4yLTIuNywyLjctMi43YzEuNSwwLDIuNywxLjIsMi43LDIuN0MyMDcuOSw0MC4yLDIwNi43LDQxLjQsMjA1LjIsNDEuNHoiLz4KCQk8cGF0aCBkPSJNMjA2LjYsMzhjMC0wLjYtMC40LTEtMS4xLTFIMjA0djMuNGgwLjZWMzloMC44bDEsMS40aDAuN2wtMS4xLTEuNUMyMDYuNCwzOC43LDIwNi42LDM4LjQsMjA2LjYsMzh6IE0yMDQuNiwzNy41aDAuOQoJCQljMC4yLDAsMC41LDAuMSwwLjUsMC40YzAsMC4zLTAuMiwwLjQtMC41LDAuNGgtMC45VjM3LjV6Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" alt="Iron Mountain" height="20" style="filter:brightness(0) invert(1)">
+  <div class="nav-sep"></div>
+  <span class="nav-event">Tech Architecture & Security</span>
+  <div class="nav-links">
+    <a class="nav-link" href="#hero"><span class="nav-num">01</span>Intro</a>
+    <a class="nav-link" href="#agenda"><span class="nav-num">02</span>Agenda</a>
+    <a class="nav-link" href="#arch"><span class="nav-num">03</span>Architecture</a>
+    <a class="nav-link" href="#flow"><span class="nav-num">04</span>Flow</a>
+    <a class="nav-link" href="#agents"><span class="nav-num">05</span>Agents</a>
+    <a class="nav-link" href="#security"><span class="nav-num">06</span>Security</a>
+    <a class="nav-link" href="#infra"><span class="nav-num">07</span>Infra</a>
+    <a class="nav-link" href="#api"><span class="nav-num">08</span>API</a>
+    <a class="nav-link" href="#dataflow"><span class="nav-num">07</span>Data</a>
+    <a class="nav-link" href="#aimodel"><span class="nav-num">08</span>AI</a>
+    <a class="nav-link" href="#governance"><span class="nav-num">09</span>Governance</a>
+  </div>
+  <div class="theme-toggle">
+    <button class="theme-btn active" id="darkBtn" onclick="setTheme('dark')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
+    <button class="theme-btn" id="lightBtn" onclick="setTheme('light')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+  </div>
+</nav>
+
+<!-- ARROW NAV -->
+<div class="arrow-nav">
+  <div class="arrow-btn" id="prevBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg></div>
+  <div class="arrow-dots" id="arrowDots"></div>
+  <div class="arrow-btn" id="nextBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+</div>
+
+<div class="page">
+
+<!-- HERO -->
+<div class="section" id="hero" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:90vh;padding-top:120px">
+  <div style="display:flex;align-items:center;gap:24px;margin-bottom:48px">
+    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTY4IiBoZWlnaHQ9IjMyIiB2aWV3Qm94PSIwIDAgMTY4IDMyIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfMTY0NTVfMTEwNDA4KSI+CjxwYXRoIGQ9Ik0zLjc5NTEgMjYuOTg5NUMzLjYxMzk2IDI3LjM5MzcgMy40MzI4MiAyNy42NjE2IDMuMjU0IDI3Ljc5NTZDMy4wNzI4NiAyNy45Mjk1IDIuODAxMTUgMjcuOTk3NyAyLjQ0MTE5IDI3Ljk5NzdIMC42Nzg1NjlDMC4yMjU3MjEgMjcuOTk3NyAwLjAwMDQ1Nzc2NCAyNy44NTIgMC4wMDA0NTc3NjQgMjcuNTYwNkMwLjAwMDQ1Nzc2NCAyNy40NDc4IDAuMDU2MTkzIDI3LjI1NzQgMC4xNjk5ODYgMjYuOTg5NUwxMC4zNjcyIDUuNjgwMjFDMTAuNzA2MyA0Ljk4Njk4IDEwLjk1NDcgNC41MzEwOSAxMS4xMTI3IDQuMzE5NTlDMTEuMjcwNiA0LjEwNTc1IDExLjQ2MzMgNCAxMS42ODg2IDRDMTEuODkzIDQgMTIuMDY3MSA0LjEwNTc1IDEyLjIxMzQgNC4zMTk1OUMxMi4zNTk3IDQuNTMzNDQgMTIuNjAzNiA0Ljk4Njk4IDEyLjk0MjYgNS42ODAyMUwyMy4yNDIgMjYuOTg5NUMyMy4zNTU4IDI3LjI1NzQgMjMuNDExNiAyNy40NTAxIDIzLjQxMTYgMjcuNTYwNkMyMy40MTE2IDI3Ljg1MiAyMy4xNzQ3IDI3Ljk5NzcgMjIuNzAwOSAyNy45OTc3SDIwLjgwMzZDMjAuNDQxMyAyNy45OTc3IDIwLjE3NjYgMjcuOTI5NSAyMC4wMDcxIDI3Ljc5NTZDMTkuODM3NSAyNy42NjE2IDE5LjY1MTggMjcuMzkxNCAxOS40NDc0IDI2Ljk4OTVMMTEuNjIxMiAxMC4yNTA5TDMuNzk1MSAyNi45ODk1WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQwLjUyMjEgMjQuODk1N0M0MC42MzU5IDI0Ljk5OTEgNDAuNjkxNiAyNS4xOTg5IDQwLjY5MTYgMjUuNDk1VjI3LjI0MzNDNDAuNjkxNiAyNy41NDE4IDQwLjYzNTkgMjcuNzQxNSA0MC41MjIxIDI3Ljg0MjZDNDAuNDA4MyAyNy45NDYgNDAuMjE3OSAyNy45OTc3IDM5Ljk0NjIgMjcuOTk3N0gyNy4xMDYyQzI2LjgzNDUgMjcuOTk3NyAyNi42NDQgMjcuOTQ2IDI2LjUzMDIgMjcuODQyNkMyNi40MTY1IDI3LjczOTIgMjYuMzYwNyAyNy41Mzk0IDI2LjM2MDcgMjcuMjQzM1Y0Ljc1NDMzQzI2LjM2MDcgNC40NTgyNCAyNi40MTY1IDQuMjU2MTQgMjYuNTMwMiA0LjE1NTFDMjYuNjQxNyA0LjA1MTcgMjYuODM0NSA0IDI3LjEwMzkgNEgzOS45MTEzQzQwLjE4MyA0IDQwLjM3MzUgNC4wNTE3IDQwLjQ4NzMgNC4xNTUxQzQwLjYwMTEgNC4yNTg0OSA0MC42NTY4IDQuNDU4MjQgNDAuNjU2OCA0Ljc1NDMzVjYuNTAyNjlDNDAuNjU2OCA2LjgwMTE0IDQwLjYwMTEgNy4wMDA4OCA0MC40ODczIDcuMTAxOTNDNDAuMzczNSA3LjIwNTMzIDQwLjE4MyA3LjI1NzAzIDM5LjkxMTMgNy4yNTcwM0gzMC4xNTNDMjkuOTk1MSA3LjI1NzAzIDI5Ljg4ODMgNy4yODUyMyAyOS44MzAyIDcuMzQxNjJDMjkuNzc0NSA3LjM5ODAyIDI5Ljc0NjYgNy40OTY3MiAyOS43NDY2IDcuNjMzMDJWMTMuOTA3NEMyOS43NDY2IDE0LjA2NzIgMjkuNzc0NSAxNC4xNzUzIDI5LjgzMDIgMTQuMjM0QzI5Ljg4NiAxNC4yOTA0IDI5Ljk5MjggMTQuMzE4NiAzMC4xNTMgMTQuMzE4NkgzOC43NTk1QzM5LjAzMTIgMTQuMzE4NiAzOS4yMjE2IDE0LjM3MDMgMzkuMzM1NCAxNC40NzM3QzM5LjQ0OTIgMTQuNTc3MSAzOS41MDQ5IDE0Ljc3NjkgMzkuNTA0OSAxNS4wNzI5VjE2Ljc4NjFDMzkuNTA0OSAxNy4wNjEgMzkuNDQ5MiAxNy4yNTM3IDM5LjMzNTQgMTcuMzY4OEMzOS4yMjE2IDE3LjQ4NCAzOS4wMzEyIDE3LjU0MDQgMzguNzU5NSAxNy41NDA0SDMwLjE1M0MyOS45OTUxIDE3LjU0MDQgMjkuODg4MyAxNy41Njg2IDI5LjgzMDIgMTcuNjI1QzI5Ljc3NDUgMTcuNjgxNCAyOS43NDY2IDE3Ljc4MDEgMjkuNzQ2NiAxNy45MTY0VjI0LjM2MjNDMjkuNzQ2NiAyNC40OTg2IDI5Ljc3NDUgMjQuNTk3MyAyOS44MzAyIDI0LjY1MzdDMjkuODg2IDI0LjcxMDEgMjkuOTkyOCAyNC43MzgzIDMwLjE1MyAyNC43MzgzSDM5Ljk0MzhDNDAuMjE1NiAyNC43MzgzIDQwLjQwNiAyNC43OSA0MC41MTk4IDI0Ljg5MzRMNDAuNTIyMSAyNC44OTU3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQ4LjcxOTggMjcuODQ0OUM0OC42MDYgMjcuOTQ4MyA0OC40MTU2IDI4IDQ4LjE0MzkgMjhINDYuMjQ2NkM0NS45NzQ4IDI4IDQ1Ljc4NDQgMjcuOTQ4MyA0NS42NzA2IDI3Ljg0NDlDNDUuNTU2OCAyNy43NDE1IDQ1LjUwMTEgMjcuNTQxOCA0NS41MDExIDI3LjI0NTdWNC43NTQzM0M0NS41MDExIDQuNDU4MjQgNDUuNTU2OCA0LjI1NjE0IDQ1LjY3MDYgNC4xNTUxQzQ1Ljc4NDQgNC4wNTE3IDQ1Ljk3NzIgNCA0Ni4yNDY2IDRINTIuNzE4OEM1OS4xNTYyIDQgNjIuMzc0OSA2LjQ3OTE5IDYyLjM3NDkgMTEuNDM5OUM2Mi4zNzQ5IDEzLjA4NDkgNjEuOTY4NSAxNC40NDA4IDYxLjE1NTcgMTUuNTAzQzYwLjM0MjkgMTYuNTY1MiA1OS4yMTIgMTcuMzUgNTcuNzY3NSAxNy44NTA2TDYzLjU5NDEgMjYuOTcwN0M2My43NzUzIDI3LjIyMjIgNjMuODY1OSAyNy40Mzg0IDYzLjg2NTkgMjcuNjIxN0M2My44NjU5IDI3Ljc1OCA2My44MDMxIDI3Ljg1NjcgNjMuNjgwMSAyNy45MTMxQzYzLjU1NDcgMjcuOTY5NSA2My4zNjg5IDI3Ljk5NzcgNjMuMTIwNCAyNy45OTc3SDYxLjEyMDlDNjAuNzM3NyAyNy45OTc3IDYwLjQ1NDQgMjcuOTQxMyA2MC4yNzMzIDI3LjgyNjFDNjAuMDkyMSAyNy43MTEgNTkuODc4NSAyNy40NjE5IDU5LjYzIDI3LjA3MThMNTMuMzk2OSAxNy4wNjFDNTMuMjYyMiAxNi44Nzc3IDUzLjE5MjYgMTYuNzE3OSA1My4xOTI2IDE2LjU4MTZDNTMuMTkyNiAxNi4zOTgzIDUzLjM2MjEgMTYuMjk0OSA1My43MDExIDE2LjI3MzhDNTcuMTEyNiAxNS45MDk1IDU4LjgxNzIgMTQuMzY1NiA1OC44MTcyIDExLjY0NDRDNTguODE3MiAxMC4wOTExIDU4LjI4MDcgOC45NTM2OSA1Ny4yMDc4IDguMjMyMjVDNTYuMTM0OSA3LjUxMzE3IDU0LjU4MTMgNy4xNTEyOCA1Mi41NDkzIDcuMTUxMjhINDkuMjk1N0M0OS4xMzc4IDcuMTUxMjggNDkuMDMxIDcuMTc5NDggNDguOTcyOSA3LjIzNTg4QzQ4LjkxNzIgNy4yOTIyNyA0OC44ODkzIDcuNDAyNzIgNDguODg5MyA3LjU2MjUyVjI3LjI0MUM0OC44ODkzIDI3LjUzOTQgNDguODMzNiAyNy43MzkyIDQ4LjcxOTggMjcuODQwMlYyNy44NDQ5WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTg0LjU5OTEgMjIuNDQ3MUM4NC44NDc2IDIyLjI0NzMgODUuMDQwNCAyMi4xNDg2IDg1LjE3NTEgMjIuMTQ4NkM4NS4yNjU2IDIyLjE0ODYgODUuMzU2MiAyMi4xODE1IDg1LjQ0NjggMjIuMjQ3M0M4NS41Mzc0IDIyLjMxMzEgODUuNjE2MyAyMi4zOTA3IDg1LjY4MzcgMjIuNDhMODYuNjY2IDIzLjgxQzg2Ljc3OTggMjMuOTQ0IDg2LjgzNTUgMjQuMDk5MSA4Ni44MzU1IDI0LjI3NTNDODYuODM1NSAyNC4zNjQ2IDg2LjgwMDcgMjQuNDU4NiA4Ni43MzMzIDI0LjU1NzNDODYuNjY2IDI0LjY1NiA4Ni41NjM4IDI0Ljc2MTggODYuNDI5MSAyNC44NzIyQzg1LjIzMDggMjUuODY4NiA4My44ODE1IDI2LjYzOTQgODIuMzgxMyAyNy4xODIyQzgwLjg3ODggMjcuNzI1MSA3OS4zMDQzIDI3Ljk5NzcgNzcuNjU1NSAyNy45OTc3Qzc1LjQ0MjMgMjcuOTk3NyA3My40MTUgMjcuNDg3NyA3MS41NzM0IDI2LjQ2NzhDNjkuNzMxOCAyNS40NDggNjguMjc1NyAyNC4wMzA5IDY3LjIwMjggMjIuMjEyMUM2Ni4xMjk5IDIwLjM5NTYgNjUuNTkzNCAxOC4zNTU4IDY1LjU5MzQgMTYuMDk1MkM2NS41OTM0IDEzLjgzNDUgNjYuMTI5OSAxMS43NTI1IDY3LjIwMjggOS45MTI0N0M2OC4yNzU3IDguMDcyNDYgNjkuNzQzNCA2LjYyNzI0IDcxLjYwODIgNS41NzQ0NkM3My40NzA3IDQuNTI2MzkgNzUuNTUzOCA0IDc3Ljg1NzUgNEM3OS40ODMxIDQgODEuMDM2NyA0LjI3NzI5IDgyLjUxNiA0LjgzMTg4QzgzLjk5NTMgNS4zODY0NyA4NS4zMTIxIDYuMTQwOCA4Ni40NjQgNy4wOTI1M0M4Ni42ODkyIDcuMjQ3NjMgODYuODAzIDcuNDE0NDcgODYuODAzIDcuNTkwNzJDODYuODAzIDcuNzQ1ODEgODYuNzM1NyA3LjkyMjA2IDg2LjU5ODYgOC4xMjE4MUw4NS42MTYzIDkuNDE4OThDODUuNDM1MiA5LjY2MzM3IDg1LjI1NCA5Ljc4NTU3IDg1LjA3NTIgOS43ODU1N0M4NC45NDA1IDkuNzg1NTcgODQuNzQ3OCA5LjY5NjI3IDg0LjQ5OTMgOS41MjAwMkM4My41Mjg2IDguNzg5MTkgODIuNDc2NiA4LjIxMzQ1IDgxLjM0NzkgNy43OTA0NkM4MC4yMTkzIDcuMzY5ODIgNzkuMDMyNiA3LjE1ODMzIDc3Ljc5MDIgNy4xNTgzM0M3Ni4xODU1IDcuMTU4MzMgNzQuNzI0NyA3LjUzNDMyIDczLjQwMzMgOC4yODg2NUM3Mi4wODE5IDkuMDQyOTggNzEuMDM2OSAxMC4wOTU4IDcwLjI2ODIgMTEuNDQ3QzY5LjQ5OTUgMTIuNzk4MiA2OS4xMTY0IDE0LjMyOCA2OS4xMTY0IDE2LjAzNDFDNjkuMTE2NCAxNy43NDAxIDY5LjQ5NDkgMTkuMTY4OSA3MC4yNTIgMjAuNTIyNUM3MS4wMDkgMjEuODczNyA3Mi4wNDcxIDIyLjkzMzUgNzMuMzY4NSAyMy42OTczQzc0LjY4OTkgMjQuNDYxIDc2LjE2NDYgMjQuODQ0IDc3Ljc5MDIgMjQuODQ0QzgwLjM0MjQgMjQuODQ0IDgyLjYxMTMgMjQuMDQ3NCA4NC41OTkxIDIyLjQ1MThWMjIuNDQ3MVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xMDkuNDAxIDI3Ljg0NDlDMTA5LjI4OCAyNy45NDgzIDEwOS4wOTcgMjggMTA4LjgyNiAyOEgxMDYuOTI4QzEwNi42NTcgMjggMTA2LjQ2NiAyNy45NDgzIDEwNi4zNTIgMjcuODQ0OUMxMDYuMjM4IDI3Ljc0MTUgMTA2LjE4MyAyNy41NDE4IDEwNi4xODMgMjcuMjQ1N1YxNy42ODE0QzEwNi4xODMgMTcuNTQ1MSAxMDYuMTU1IDE3LjQ0NjQgMTA2LjA5OSAxNy4zOUMxMDYuMDQzIDE3LjMzMzYgMTA1LjkzNCAxNy4zMDU0IDEwNS43NzYgMTcuMzA1NEg5NC41NjJDOTQuNDA0MSAxNy4zMDU0IDk0LjI5NzIgMTcuMzMzNiA5NC4yMzkyIDE3LjM5Qzk0LjE4MzQgMTcuNDQ2NCA5NC4xNTU2IDE3LjU0NTEgOTQuMTU1NiAxNy42ODE0VjI3LjI0NTdDOTQuMTU1NiAyNy41NDQxIDk0LjA5OTggMjcuNzQzOSA5My45ODYgMjcuODQ0OUM5My44NzIyIDI3Ljk0ODMgOTMuNjgxOCAyOCA5My40MTAxIDI4SDkxLjUxMjhDOTEuMjQxMSAyOCA5MS4wNTA3IDI3Ljk0ODMgOTAuOTM2OSAyNy44NDQ5QzkwLjgyMzEgMjcuNzQxNSA5MC43NjczIDI3LjU0MTggOTAuNzY3MyAyNy4yNDU3VjQuNzU0MzNDOTAuNzY3MyA0LjQ1ODI0IDkwLjgyMzEgNC4yNTYxNCA5MC45MzY5IDQuMTU1MUM5MS4wNDgzIDQuMDUxNyA5MS4yNDExIDQgOTEuNTEwNSA0SDkzLjQwNzhDOTMuNjc5NSA0IDkzLjg3MjMgNC4wNTE3IDkzLjk4MzcgNC4xNTUxQzk0LjA5NzUgNC4yNTg0OSA5NC4xNTMyIDQuNDU4MjQgOTQuMTUzMiA0Ljc1NDMzVjEzLjY2NzdDOTQuMTUzMiAxMy44MDQgOTQuMTgxMSAxMy45MDc0IDk0LjIzNjkgMTMuOTc1NUM5NC4yOTI2IDE0LjA0MzcgOTQuMzk5NCAxNC4wNzg5IDk0LjU1OTYgMTQuMDc4OUgxMDUuNzc0QzEwNS45MzIgMTQuMDc4OSAxMDYuMDM5IDE0LjA0MzcgMTA2LjA5NyAxMy45NzU1QzEwNi4xNTMgMTMuOTA3NCAxMDYuMTggMTMuODA0IDEwNi4xOCAxMy42Njc3VjQuNzU0MzNDMTA2LjE4IDQuNDU4MjQgMTA2LjIzNiA0LjI1NjE0IDEwNi4zNSA0LjE1NTFDMTA2LjQ2NCA0LjA1MTcgMTA2LjY1NyA0IDEwNi45MjggNEgxMDguODI2QzEwOS4wOTUgNCAxMDkuMjg4IDQuMDUxNyAxMDkuNDAxIDQuMTU1MUMxMDkuNTE1IDQuMjU4NDkgMTA5LjU3MSA0LjQ1ODI0IDEwOS41NzEgNC43NTQzM1YyNy4yNDU3QzEwOS41NzEgMjcuNTQ0MSAxMDkuNTE1IDI3Ljc0MzkgMTA5LjQwMSAyNy44NDQ5WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTE2NC4yNTIgNC4xNTA0QzE2NC4zNjYgNC4wNDkzNSAxNjQuNTU4IDQgMTY0LjgyOCA0SDE2Ni43MjVDMTY2Ljk5NyA0IDE2Ny4xODkgNC4wNDkzNSAxNjcuMzAxIDQuMTUwNEMxNjcuNDE1IDQuMjQ5MDkgMTY3LjQ3IDQuNDQ0MTQgMTY3LjQ3IDQuNzMzMThWMjYuOTA0OUMxNjcuNDcgMjcuNjM1OCAxNjcuMjQ1IDI4LjAwMjMgMTY2Ljc5MiAyOC4wMDIzQzE2Ni42MTEgMjguMDAyMyAxNjYuNDIxIDI3LjkyOTUgMTY2LjIxNiAyNy43ODYyQzE2Ni4wMTIgMjcuNjQyOCAxNjUuNzMxIDI3LjM3MDIgMTY1LjM2OSAyNi45NzA3TDE1MS42MTQgMTEuMDQ5OFYyNi45MDQ5QzE1MS42MTQgMjcuMTk0IDE1MS41NTggMjcuMzg2NyAxNTEuNDQ0IDI3LjQ4NzdDMTUxLjMzIDI3LjU4NjQgMTUxLjE0IDI3LjYzODEgMTUwLjg2OCAyNy42MzgxSDE0OC45NzFDMTQ4LjY5OSAyNy42MzgxIDE0OC41MDkgMjcuNTg4OCAxNDguMzk1IDI3LjQ4NzdDMTQ4LjI4MSAyNy4zODkgMTQ4LjIyNiAyNy4xOTQgMTQ4LjIyNiAyNi45MDQ5VjUuMDk3NDJDMTQ4LjIyNiA0LjcyMTQzIDE0OC4yODEgNC40NDQxNCAxNDguMzk1IDQuMjY1NTRDMTQ4LjUwOSA0LjA4OTMgMTQ4LjY5IDQgMTQ4LjkzOSA0QzE0OS4xMiA0IDE0OS4zMSA0LjA3Mjg1IDE0OS41MTQgNC4yMTYyQzE0OS43MTkgNC4zNTk1NCAxNDkuOTg4IDQuNjMyMTQgMTUwLjMyNyA1LjAzMTYzTDE2NC4wODIgMjAuOTUyNVY0LjczMDgzQzE2NC4wODIgNC40NDQxNCAxNjQuMTM4IDQuMjQ5MDkgMTY0LjI1MiA0LjE0ODA1VjQuMTUwNFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xNDMuNzMyIDE4LjcwODNDMTQzLjcyIDE4LjY1MTkgMTQzLjcwNCAxOC40OTQ0IDE0My42OTkgMTguNDE5M0MxNDMuNzA0IDE4LjQzNTcgMTQzLjczIDE4LjY3NTQgMTQzLjczMiAxOC43MDgzWiIgZmlsbD0iI0RDNUY0MCIvPgo8cGF0aCBkPSJNMTQxLjYxMyAxMS4wOEMxNDIuNjk4IDEwLjk2MDIgMTQzLjQ4MyA5Ljk3MzIgMTQzLjM2NCA4Ljg3MzQyQzE0My4yNDYgNy43NzYgMTQyLjI3IDYuOTgxNzEgMTQxLjE4NCA3LjEwMTU2QzE0MC4wOTkgNy4yMjE0MSAxMzkuMzE0IDguMjA4MzkgMTM5LjQzMyA5LjMwODE2QzEzOS41NTEgMTAuNDA1NiAxNDAuNTI2IDExLjE5OTkgMTQxLjYxMyAxMS4wOFoiIGZpbGw9IiNEQzVGNDAiLz4KPHBhdGggZD0iTTE0My44NTcgMjAuNjI1NEMxNDMuOTQzIDE2LjE2OTkgMTQyLjA5MiAxMC43Njc0IDEzNy4yNTIgMTMuODM2NEMxMzYuODQ2IDEzLjk5NjIgMTM2LjYxNCAxMy45Mzk4IDEzNi40IDEzLjYzNDNDMTM1Ljc4OSAxMi41MTU4IDEzNS4zMiAxMS4zNzEzIDEzNC43MzkgMTAuMTk2NEMxMzAuMzcxIC0xLjE3NTAxIDEyNS4zODMgNS4zMjcyOSAxMjAuMTE0IDEyLjA1NzVDMTA4LjM0NyAyNy40NDk3IDExMy44OSAzNC4yNjY5IDEzMi40MzggMjAuNzVDMTMzLjA4NiAyMC4yODQ3IDEzNC4zODQgMTkuMzExOCAxMzQuODUxIDE5LjI3MTlDMTM1LjM0MyAxOS4xOTIgMTM1LjU0OCAxOS41OTYyIDEzNS45MTkgMjAuNDQyMUMxMzYuMjc5IDIxLjMwOTMgMTM2Ljg3OCAyMi41MzgzIDEzNy40MjYgMjMuNDE0OEMxNDAuNTkyIDI5LjYzMDQgMTQ0LjA5OCAyOC4xODk5IDE0My44NTkgMjAuNjUxM1YyMC42MjU0SDE0My44NTdaTTEyOS45MDkgMTguMzA4NEMxMjcuNTc1IDE5Ljc4NDIgMTI1LjM2IDIxLjU5MTMgMTIyLjc5NiAyMi42Njk5QzEyMS42NzkgMjMuMTQyMiAxMjAuMDUxIDIyLjYyMDUgMTE5LjY0OSAyMS43MDY0QzExOS4xOTQgMjAuMjg5NCAxMjAuODIyIDE4LjIwMDMgMTIxLjYyMSAxNi43MjkyQzEyMi41NDcgMTUuMDUzNyAxMjMuNzc2IDEzLjU2MzggMTI0Ljk1MyAxMi4wNDU4QzEyNi4wOTYgMTAuNTQ4OSAxMjcuNjQ3IDguMzI4MTcgMTI5Ljc5OCA5LjI5ODdDMTMxLjUyMyAxMC4yOTA0IDEzMi4yMzEgMTMuMDMyOCAxMzMuMjE4IDE0LjY4NzFDMTMzLjY2NCAxNS40MDM5IDEzMy42NSAxNS45MTE0IDEzMi44NyAxNi4zNDM4QzEzMS45MjUgMTYuOTUyNSAxMzAuOTAxIDE3LjY0NTcgMTI5LjkyOCAxOC4yOTlMMTI5LjkwOSAxOC4zMTA3VjE4LjMwODRaTTE0Mi41NTYgMjEuMjQzNUMxNDIuNTA1IDIyLjA5NjUgMTQyLjM0NSAyNS4zMjMgMTQxLjI3IDIzLjc4NjFDMTQwLjI3MSAyMS44ODc0IDEzOS4xNzUgMTkuNTIxIDEzOC4xOTcgMTcuNDk3N0MxMzcuODE3IDE2LjQ2MzcgMTQwLjE5MiAxNi4wNDU0IDE0MC44MSAxNi4yMjE2QzE0Mi41MzUgMTYuODY1NSAxNDIuNTk2IDE5LjYxOTcgMTQyLjU1NiAyMS4yMjk0VjIxLjI0NThWMjEuMjQzNVoiIGZpbGw9IiNEQzVGNDAiLz4KPC9nPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSJjbGlwMF8xNjQ1NV8xMTA0MDgiPgo8cmVjdCB3aWR0aD0iMTY4IiBoZWlnaHQ9IjMyIiBmaWxsPSJ3aGl0ZSIvPgo8L2NsaXBQYXRoPgo8L2RlZnM+Cjwvc3ZnPgo=" alt="Aerchain" height="38" class="logo-aer">
+    <span style="font-size:20px;font-weight:300;color:var(--fg3)">×</span>
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI0LjIuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAyMDguOSA1OC45IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCAyMDguOSA1OC45OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+Cgkuc3Qwe29wYWNpdHk6MC43NTtmaWxsOiMxMzQ4N0Q7fQoJLnN0MXtvcGFjaXR5OjAuNzU7ZmlsbDojMUM3NUJDO30KCS5zdDJ7b3BhY2l0eTowLjc1O2ZpbGw6IzZEQ0ZGNjt9Cjwvc3R5bGU+CjxnPgoJPGc+CgkJPHBvbHlnb24gY2xhc3M9InN0MCIgcG9pbnRzPSIyNC40LDE0LjMgMzYuNSwzNCA0OC43LDUzLjcgMjQuNCw1My43IDAsNTMuNyAxMi4yLDM0IAkJIi8+CgkJPHBvbHlnb24gY2xhc3M9InN0MSIgcG9pbnRzPSI0Mi45LDAgNTUuMSwyNi45IDY3LjMsNTMuNyA0Mi45LDUzLjcgMTguNSw1My43IDMwLjcsMjYuOSAJCSIvPgoJCTxwb2x5Z29uIGNsYXNzPSJzdDIiIHBvaW50cz0iMzMuNiw3LjcgNDUuOCwzMC43IDU4LDUzLjcgMzMuNiw1My43IDkuMyw1My43IDIxLjUsMzAuNyAJCSIvPgoJPC9nPgoJPGc+CgkJPHJlY3QgeD0iNzMuMSIgeT0iNy43IiB3aWR0aD0iMS40IiBoZWlnaHQ9IjE3LjEiLz4KCQk8cGF0aCBkPSJNODgsMTYuOGMyLjYtMC40LDQuMS0yLDQuMS00LjVjMC0yLjgtMi00LjYtNS4zLTQuNmgtNy42djE3LjFoMS40di03LjloNS43bDUuNSw3LjhsMCwwLjFoMS43TDg4LDE2Ljh6IE04MC42LDloNi4xCgkJCWMyLjUsMCwzLjksMS4yLDMuOSwzLjNjMCwyLjEtMS40LDMuMy0zLjksMy4zaC02LjFWOXoiLz4KCQk8cGF0aCBkPSJNMTAzLjksNy40Yy00LjksMC04LjUsMy44LTguNSw4LjhjMCw1LDMuNyw4LjgsOC41LDguOGM0LjgsMCw4LjUtMy44LDguNS04LjhDMTEyLjQsMTEuMiwxMDguOCw3LjQsMTAzLjksNy40egoJCQkgTTEwMy45LDIzLjdjLTQsMC03LjEtMy4yLTcuMS03LjVjMC00LjIsMy03LjQsNy4xLTcuNGM0LDAsNywzLjIsNyw3LjRDMTExLDIwLjUsMTA4LDIzLjcsMTAzLjksMjMuN3oiLz4KCQk8cG9seWdvbiBwb2ludHM9IjEyOC43LDIyLjIgMTE3LjUsNy43IDExNy41LDcuNyAxMTYuMyw3LjcgMTE2LjMsMjQuOCAxMTcuNywyNC44IDExNy43LDEwLjIgMTI4LjksMjQuNyAxMjguOSwyNC44IDEzMC4xLDI0LjggCgkJCTEzMC4xLDcuNyAxMjguNyw3LjcgCQkiLz4KCQk8cG9seWdvbiBwb2ludHM9IjgwLjcsNDUgNzQuMywzNi42IDc0LjMsMzYuNiA3Mi45LDM2LjYgNzIuOSw1My42IDc0LjMsNTMuNiA3NC4zLDM4LjkgODAuMiw0Ni42IDgwLjMsNDYuNiA4MS4xLDQ2LjYgODcsMzguOSAKCQkJODcsNTMuNiA4OC41LDUzLjYgODguNSwzNi42IDg3LjEsMzYuNiAJCSIvPgoJCTxwYXRoIGQ9Ik0xMDAuOCwzNi4zYy00LjksMC04LjUsMy44LTguNSw4LjhjMCw1LDMuNyw4LjgsOC41LDguOGM0LjgsMCw4LjUtMy44LDguNS04LjhDMTA5LjMsNDAuMSwxMDUuNywzNi4zLDEwMC44LDM2LjN6CgkJCSBNMTAwLjgsNTIuNmMtNCwwLTcuMS0zLjItNy4xLTcuNWMwLTQuMiwzLTcuNCw3LjEtNy40YzQsMCw3LDMuMiw3LDcuNEMxMDcuOCw0OS40LDEwNC44LDUyLjYsMTAwLjgsNTIuNnoiLz4KCQk8cGF0aCBkPSJNMTI1LjIsNDYuM2MwLDMuOS0yLDYuMi01LjQsNi4yYy0zLjQsMC01LjQtMi4zLTUuNC02LjJ2LTkuOGgtMS40djkuOGMwLDQuNywyLjYsNy42LDYuOSw3LjZjNC4yLDAsNi45LTIuOSw2LjktNy42di05LjgKCQkJaC0xLjRWNDYuM3oiLz4KCQk8cG9seWdvbiBwb2ludHM9IjE0My4zLDUxLjEgMTMyLjEsMzYuNiAxMzIuMSwzNi42IDEzMC45LDM2LjYgMTMwLjksNTMuNiAxMzIuMyw1My42IDEzMi4zLDM5LjEgMTQzLjUsNTMuNiAxNDMuNSw1My42IAoJCQkxNDQuNyw1My42IDE0NC43LDM2LjYgMTQzLjMsMzYuNiAJCSIvPgoJCTxwb2x5Z29uIHBvaW50cz0iMTYxLjEsMzYuNiAxNDcuNiwzNi42IDE0Ny42LDM3LjkgMTUzLjcsMzcuOSAxNTMuNyw1My42IDE1NS4xLDUzLjYgMTU1LjEsMzcuOSAxNjEuMSwzNy45IAkJIi8+CgkJPHBhdGggZD0iTTE2OC44LDM2LjVoLTEuM2wtNy43LDE3bC0wLjEsMC4yaDEuNWwyLjItNC45aDkuM2wyLjIsNC45aDEuNUwxNjguOCwzNi41TDE2OC44LDM2LjV6IE0xNzIuMiw0Ny40aC04LjJsNC4xLTkKCQkJTDE3Mi4yLDQ3LjR6Ii8+CgkJPHJlY3QgeD0iMTc5LjQiIHk9IjM2LjYiIHdpZHRoPSIxLjQiIGhlaWdodD0iMTcuMSIvPgoJCTxwb2x5Z29uIHBvaW50cz0iMTk3LjksNTEuMSAxODYuOCwzNi42IDE4Ni44LDM2LjYgMTg1LjUsMzYuNiAxODUuNSw1My42IDE4Nyw1My42IDE4NywzOS4xIDE5OC4xLDUzLjYgMTk4LjIsNTMuNiAxOTkuNCw1My42IAoJCQkxOTkuNCwzNi42IDE5Ny45LDM2LjYgCQkiLz4KCQk8cGF0aCBkPSJNMjA1LjIsMzUuNWMtMS43LDAtMy4yLDEuNC0zLjIsMy4yczEuNCwzLjIsMy4yLDMuMmMxLjgsMCwzLjItMS40LDMuMi0zLjJDMjA4LjQsMzcsMjA3LDM1LjUsMjA1LjIsMzUuNXogTTIwNS4yLDQxLjQKCQkJYy0xLjUsMC0yLjctMS4yLTIuNy0yLjdjMC0xLjUsMS4yLTIuNywyLjctMi43YzEuNSwwLDIuNywxLjIsMi43LDIuN0MyMDcuOSw0MC4yLDIwNi43LDQxLjQsMjA1LjIsNDEuNHoiLz4KCQk8cGF0aCBkPSJNMjA2LjYsMzhjMC0wLjYtMC40LTEtMS4xLTFIMjA0djMuNGgwLjZWMzloMC44bDEsMS40aDAuN2wtMS4xLTEuNUMyMDYuNCwzOC43LDIwNi42LDM4LjQsMjA2LjYsMzh6IE0yMDQuNiwzNy41aDAuOQoJCQljMC4yLDAsMC41LDAuMSwwLjUsMC40YzAsMC4zLTAuMiwwLjQtMC41LDAuNGgtMC45VjM3LjV6Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" alt="Iron Mountain" height="34" style="filter:brightness(0) invert(1)" class="logo-im">
+  </div>
+  <div class="ey p" style="justify-content:center">Technical Architecture & Security Review</div>
+  <h1 style="font-size:60px;font-weight:300;letter-spacing:-.03em;line-height:1.05;margin-bottom:16px"><span class="gt" style="font-size:60px">Autonomous Sourcing</span><br>Technical Deep-Dive</h1>
+  <p style="font-size:18px;color:var(--fg2);max-width:640px;line-height:1.7;margin:0 auto 40px">Platform architecture, security posture, integration design, and data governance — scoped for Iron Mountain's global procurement transformation.</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:720px;margin:0 auto 48px">
+    <div style="padding:14px 22px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:hsl(262 80% 72%)">60</div><div style="font-size:10px;color:var(--fg3);margin-top:2px">Countries</div></div>
+    <div style="padding:14px 22px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:hsl(217 85% 72%)">50</div><div style="font-size:10px;color:var(--fg3);margin-top:2px">Named Users</div></div>
+    <div style="padding:14px 22px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:hsl(38 88% 62%)">12K</div><div style="font-size:10px;color:var(--fg3);margin-top:2px">RFx / Year</div></div>
+    <div style="padding:14px 22px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:hsl(14 68% 62%)">&lt; $250K</div><div style="font-size:10px;color:var(--fg3);margin-top:2px">Tactical & Tail Spend</div></div>
+  </div>
+  <div style="display:flex;gap:12px;font-family:'JetBrains Mono',monospace;font-size:10px;justify-content:center">
+    <span style="padding:4px 12px;border-radius:6px;background:hsl(152 68% 42%/.12);color:hsl(152 65% 58%);border:1px solid hsl(152 68% 42%/.18)">CONFIDENTIAL</span>
+    <span style="padding:4px 12px;border-radius:6px;background:var(--glass);color:var(--fg3);border:1px solid var(--gb)">MARCH 2026</span>
+  </div>
+</div>
+
+<!-- AGENDA -->
+<div class="ch-break"></div>
+<div class="section" id="agenda">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">00</div><div class="ch-sep"></div><span class="ch-time">Session Agenda</span></div>
+    <h2>Today's <span class="gt">Discussion</span></h2>
+    <div class="ch-sub">Technical architecture walk-through and InfoSec review — covering Aerchain's platform, integration points with ServiceNow SPO and Oracle Fusion, security posture, and data governance.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px">
+    <div>
+      <div class="agenda-item"><div class="agenda-num">01</div><div><div class="agenda-title">Integration Architecture</div><div class="agenda-desc">ServiceNow SPO (intake + results writeback) ↔ Aerchain ↔ Oracle Fusion (supplier & PO data).</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">02</div><div><div class="agenda-title">End-to-End Process Flow</div><div class="agenda-desc">Seven-stage sourcing journey from PR intake to PO creation — Tactical and Autonomous modes</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">03</div><div><div class="agenda-title">AI Agent Architecture</div><div class="agenda-desc">Five-agent orchestration model, inter-agent protocol, and decision traceability</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">04</div><div><div class="agenda-title">Security & Compliance</div><div class="agenda-desc">SOC 2 Type II, ISO 27001, GDPR, encryption, access control, SSO, MFA</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">05</div><div><div class="agenda-title">Cloud Infrastructure & API Security</div><div class="agenda-desc">AWS multi-region, auto-scaling, OAuth 2.0, rate limiting, DR/BCP</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">06</div><div><div class="agenda-title">Data Flow & Classification</div><div class="agenda-desc">What data types flow through Aerchain, classification levels, PII handling, residency, tenant isolation</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">07</div><div><div class="agenda-title">AI & LLM Model Governance</div><div class="agenda-desc">Model training policy, customer data isolation, inference architecture, explainability, bias controls</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">08</div><div><div class="agenda-title">Governance, Audit & Open Discussion</div><div class="agenda-desc">Immutable audit trail, AI explainability, compliance reporting, Q&A</div></div></div>
+    </div>
+    <div>
+      <div class="ey p" style="margin-bottom:16px">Aerchain Team</div>
+      <div style="display:grid;gap:8px;margin-bottom:28px">
+        <div class="team-card"><div class="team-avatar">HK</div><div><div class="team-name">Harsha Kadimisetty</div><div class="team-role">Co-Founder & CEO</div></div></div>
+        <div class="team-card"><div class="team-avatar">HJ</div><div><div class="team-name">Himavanth Jasti</div><div class="team-role">Co-Founder & CTO</div></div></div>
+        <div class="team-card"><div class="team-avatar">GG</div><div><div class="team-name">Gaurav Guha</div><div class="team-role">Head of Sales</div></div></div>
+        <div class="team-card"><div class="team-avatar">AG</div><div><div class="team-name">Abhilash Govindu</div><div class="team-role">Product Lead</div></div></div>
+        <div class="team-card"><div class="team-avatar">DG</div><div><div class="team-name">Dhiraj Ghosal</div><div class="team-role">Product Consultant</div></div></div>
+      </div>
+      <div class="ey b" style="margin-bottom:16px">Iron Mountain Team</div>
+      <div style="display:grid;gap:8px">
+        <div class="team-card"><div class="team-avatar" style="background:hsl(217 88% 58%)">SP</div><div><div class="team-name">Sreedhar Pathri</div><div class="team-role">Director — Global Procurement</div></div></div>
+        <div class="team-card"><div class="team-avatar" style="background:hsl(217 88% 58%)">KC</div><div><div class="team-name">Kamal Chetty</div><div class="team-role">Head of Global Procurement — C.O.E & Enablement</div></div></div>
+        <div class="team-card"><div class="team-avatar" style="background:hsl(217 88% 58%)">+</div><div><div class="team-name">Iron Mountain InfoSec & Technical Team</div><div class="team-role">As invited</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="ch-break"></div>
+<div class="section" id="arch">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">01</div><div class="ch-sep"></div><span class="ch-time">Integration Architecture</span></div>
+    <h2>Three-System <span class="gt">Orchestration</span> Layer</h2>
+    <div class="ch-sub">Aerchain operates as the AI sourcing engine integrated with Iron Mountain's ServiceNow SPO (intake/triage and results writeback) and Oracle Fusion (supplier master and historical PO data). A system integrator will assist with the design and implementation of this S2P transformation.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+  <div class="arch-wrap">
+    <div class="arch" id="archGrid" style="grid-template-columns:280px 1fr 280px;gap:0 24px;align-items:start">
+      <!-- LEFT: Iron Mountain Systems -->
+      <div>
+        <span class="col-lbl im">Iron Mountain Systems</span>
+        <div class="sc blue" id="snow" style="padding:14px 16px;margin-bottom:10px">
+          <div class="si"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <div><div class="sn">ServiceNow SPO</div><div class="sd">Case-initiated intake, triage,<br>exception routing, results writeback</div><div class="sp"><span class="pr blue">REST API</span><span class="pr blue">WEBHOOK</span></div></div>
+        </div>
+        <div class="sc blue" id="oracle" style="padding:14px 16px;margin-bottom:10px">
+          <div class="si"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg></div>
+          <div><div class="sn">Oracle Fusion</div><div class="sd">Supplier master data, historical<br>PO information, vendor records</div><div class="sp"><span class="pr blue">DATA UPLOAD</span></div></div>
+        </div>
+        <div class="sc blue" id="supp" style="padding:14px 16px;margin-bottom:10px">
+          <div class="si"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg></div>
+          <div><div class="sn">Supplier Master</div><div class="sd">Vendor database, qualification,<br>segmentation data</div><div class="sp"><span class="pr blue">REST API</span></div></div>
+        </div>
+        <div class="sc teal" id="sso" style="padding:14px 16px;margin-bottom:10px">
+          <div class="si"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div><div class="sn">Iron Mountain IdP</div><div class="sd">SSO, MFA, role-based access</div><div class="sp"><span class="pr purple">SAML 2.0</span><span class="pr purple">OAUTH2</span></div></div>
+        </div>
+        <!-- Integration Protocols -->
+        <div style="padding:14px 16px;border-radius:11px;background:hsl(217 22% 12%);border:1.5px solid hsl(217 55% 58%/.15);margin-bottom:10px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:hsl(217 85% 72%);margin-bottom:8px">Integration Protocols</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+            <span class="pr blue" style="font-size:8px;padding:3px 8px">REST / HTTPS</span>
+            <span class="pr purple" style="font-size:8px;padding:3px 8px">SAML 2.0</span>
+            <span class="pr purple" style="font-size:8px;padding:3px 8px">OAUTH2</span>
+            <span class="pr green" style="font-size:8px;padding:3px 8px">WEBHOOKS</span>
+          </div>
+          <div style="font-size:9px;color:var(--fg3);line-height:1.45">All integrations via structured REST APIs over HTTPS. No core system customisation required.</div>
+        </div>
+      </div>
+
+      <!-- CENTER: Aerchain Hub -->
+      <div class="hub-wrap" style="padding-top:24px">
+        <span class="col-lbl aer">Aerchain Platform</span>
+        <div class="hub-orb-wrap" id="hubOrb" style="width:180px;height:180px;margin-bottom:24px">
+          <div class="hub-glow"></div><div class="hub-ring r3"></div><div class="hub-ring r2"></div><div class="hub-ring r1"></div>
+          <div class="hub-orb"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI5LjAwOTEgMTEuMDhDMzAuMTA2NSAxMC45NjAyIDMwLjkwMDggOS45NzMyIDMwLjc4MDkgOC44NzM0MkMzMC42NjExIDcuNzc2IDI5LjY3NDEgNi45ODE3MSAyOC41NzQzIDcuMTAxNTZDMjcuNDc2OSA3LjIyMTQxIDI2LjY4MjYgOC4yMDgzOSAyNi44MDI1IDkuMzA4MTZDMjYuOTIyMyAxMC40MDU2IDI3LjkwOTMgMTEuMTk5OSAyOS4wMDkxIDExLjA4WiIgZmlsbD0iI0RDNUY0MCIvPgo8cGF0aCBkPSJNMzEuMjc5NCAyMC42MjU0QzMxLjM2NjMgMTYuMTY5OSAyOS40OTM0IDEwLjc2NzQgMjQuNTk2MSAxMy44MzY0QzI0LjE4NDkgMTMuOTk2MiAyMy45NDk5IDEzLjkzOTggMjMuNzMzNyAxMy42MzQzQzIzLjExNTcgMTIuNTE1OCAyMi42NDEgMTEuMzcxMyAyMi4wNTM1IDEwLjE5NjRDMTcuNjMzMiAtMS4xNzUwMSAxMi41ODU2IDUuMzI3MjkgNy4yNTM1MyAxMi4wNTc1Qy00LjY1MzY1IDI3LjQ0OTcgMC45NTU2NzUgMzQuMjY2OSAxOS43MjQ3IDIwLjc1QzIwLjM4MDMgMjAuMjg0NyAyMS42OTM5IDE5LjMxMTggMjIuMTY2MyAxOS4yNzE5QzIyLjY2NDUgMTkuMTkyIDIyLjg3MTMgMTkuNTk2MiAyMy4yNDczIDIwLjQ0MjFDMjMuNjExNSAyMS4zMDkzIDI0LjIxNzggMjIuNTM4MyAyNC43NzI0IDIzLjQxNDhDMjcuOTc1NCAyOS42MzA0IDMxLjUyMzggMjguMTg5OSAzMS4yODE3IDIwLjY1MTNWMjAuNjI1NEgzMS4yNzk0Wk0xNy4xNjU2IDE4LjMwODRDMTQuODAzOSAxOS43ODQyIDEyLjU2MjEgMjEuNTkxMyA5Ljk2NzcxIDIyLjY2OTlDOC44MzczOSAyMy4xNDIyIDcuMTkwMDggMjIuNjIwNSA2Ljc4MzU0IDIxLjcwNjRDNi4zMjI5NSAyMC4yODk0IDcuOTcwMjYgMTguMjAwMyA4Ljc3ODY0IDE2LjcyOTJDOS43MTYyNyAxNS4wNTM3IDEwLjk1OTQgMTMuNTYzOCAxMi4xNTA4IDEyLjA0NThDMTMuMzA3IDEwLjU0ODkgMTQuODc2NyA4LjMyODE3IDE3LjA1MjggOS4yOTg3QzE4Ljc5ODggMTAuMjkwNCAxOS41MTU1IDEzLjAzMjggMjAuNTE0MyAxNC42ODcxQzIwLjk2NTUgMTUuNDAzOSAyMC45NTE0IDE1LjkxMTQgMjAuMTYxOCAxNi4zNDM4QzE5LjIwNTQgMTYuOTUyNSAxOC4xNjkgMTcuNjQ1NyAxNy4xODQ0IDE4LjI5OUwxNy4xNjU2IDE4LjMxMDdWMTguMzA4NFpNMjkuOTYzNCAyMS4yNDM1QzI5LjkxMTcgMjIuMDk2NSAyOS43NDk2IDI1LjMyMyAyOC42NjE1IDIzLjc4NjFDMjcuNjUxMSAyMS44ODc0IDI2LjU0MTkgMTkuNTIxIDI1LjU1MjYgMTcuNDk3N0MyNS4xNjcyIDE2LjQ2MzcgMjcuNTcxMiAxNi4wNDU0IDI4LjE5NjIgMTYuMjIxNkMyOS45NDIzIDE2Ljg2NTUgMzAuMDAzMyAxOS42MTk3IDI5Ljk2MzQgMjEuMjI5NFYyMS4yNDU4VjIxLjI0MzVaIiBmaWxsPSIjREM1RjQwIi8+Cjwvc3ZnPgo=" alt="Aerchain" style="width:40px;height:40px"><div class="hub-orb-text">Aiera AI</div></div>
+        </div>
+
+        <div class="mod-section" style="margin-bottom:22px"><div class="mod-label capp"><div class="dot"></div>cApp — Buyer Portal</div><div class="mod-grid">
+          <div class="mc capp"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Sourcing Intake</div>
+          <div class="mc capp"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>RFx Builder</div>
+          <div class="mc capp"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Bid Evaluation</div>
+          <div class="mc capp"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Award Management</div>
+        </div></div>
+
+        <div class="mod-section" style="margin-bottom:22px"><div class="mod-label sapp"><div class="dot"></div>sApp — Supplier Portal</div><div class="mod-grid">
+          <div class="mc sapp"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>RFQ Response</div>
+          <div class="mc sapp"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Compliance Upload</div>
+          <div class="mc sapp"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Q&A Clarifications</div>
+        </div></div>
+
+        <div class="mod-section"><div class="mod-label ai"><div class="dot"></div>AI & Autonomy Engine</div><div class="mod-grid">
+          <div class="mc ai"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Aiera AI Assistant</div>
+          <div class="mc ai"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Intake Agent</div>
+          <div class="mc ai"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Sourcing Agent</div>
+          <div class="mc ai"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Evaluation Agent</div>
+          <div class="mc ai"><svg viewBox="0 0 24 24"><path d="m14.5 12.5-8 8a2.119 2.119 0 11-3-3l8-8"/><path d="m16 16 6-6"/></svg>Negotiation Agent</div>
+          <div class="mc ai"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Award Agent</div>
+        </div></div>
+      </div>
+
+      <!-- RIGHT: Award Handoffs -->
+      <div>
+        <span class="col-lbl out">Award Handoffs</span>
+        <div class="oc green" id="oOracle" style="padding:16px;margin-bottom:10px">
+          <div class="oi"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <div><div class="on">ServiceNow SPO Writeback</div><div class="ox">Award confirmation, sourcing results, and supplier details posted back to ServiceNow SPO</div><div class="ot" style="background:hsl(152 68% 42%/.1);color:hsl(152 65% 56%)">ON AWARD FINALISATION</div></div>
+        </div>
+        <div class="oc blue" id="oReport" style="padding:16px;margin-bottom:10px">
+          <div class="oi"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div>
+          <div><div class="on">Analytics & Reporting</div><div class="ox">Real-time dashboards — spend analytics, savings attribution, cycle time, compliance</div><div class="ot" style="background:hsl(217 88% 58%/.1);color:hsl(217 85% 68%)">LIVE</div></div>
+        </div>
+        <div class="oc blue" id="oAudit" style="padding:16px;margin-bottom:10px">
+          <div class="oi"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/></svg></div>
+          <div><div class="on">Immutable Audit Log</div><div class="ox">Every transaction, decision, agent action recorded with timestamp and user attribution</div><div class="ot" style="background:hsl(217 88% 58%/.1);color:hsl(217 85% 68%)">SEALED</div></div>
+        </div>
+      </div>
+
+      <svg class="flow-svg" id="flowSvg"><defs>
+        <marker id="ab" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 2L10 5L0 8" stroke="hsl(217 85% 58%)" fill="none"/></marker>
+        <marker id="ag" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 2L10 5L0 8" stroke="hsl(152 65% 42%)" fill="none"/></marker>
+        <marker id="apr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 2L10 5L0 8" stroke="hsl(262 75% 58%)" fill="none"/></marker>
+        <marker id="atl" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 2L10 5L0 8" stroke="hsl(174 60% 42%)" fill="none"/></marker>
+      </defs></svg>
+    </div>
+  </div>
+  <div class="qt"><div class="qt-bar"></div><div class="qt-text"><b>Integration Principle:</b> Aerchain integrates with ServiceNow SPO to capture intake metadata, execute sourcing events, and share results back. Oracle Fusion integration is scoped to ingest supplier master data and historical PO information to enrich AI-driven sourcing decisions. No core system customisation required — all connections are API-based.</div></div>
+</div>
+
+
+<!-- PROCESS FLOW -->
+<div class="ch-break"></div>
+<div class="section" id="flow">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">02</div><div class="ch-sep"></div><span class="ch-time">Integrated Process Flow</span></div>
+    <h2>Intelligent, <span class="gt">orchestrated sourcing</span></h2>
+    <div class="ch-sub">ServiceNow SPO intake, AI-driven routing, fit-for-purpose execution paths, and integrated downstream handoffs — with results written back to ServiceNow SPO.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+
+  <!-- INTAKE SOURCES -->
+  <div style="margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:hsl(217 85% 72%);display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:hsl(217 88% 58%)"></span>Iron Mountain Intake Source</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+    <div style="padding:16px 18px;border-radius:12px;background:hsl(217 24% 13%);border:1px solid hsl(217 55% 58%/.15);display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:9px;background:hsl(217 88% 58%/.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="hsl(217 85% 68%)" stroke-width="1.7" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div><div style="font-size:13px;font-weight:700;color:var(--fg)">ServiceNow SPO</div><div style="font-size:10px;color:var(--fg3)">Case-initiated sourcing request</div></div></div>
+    <div style="padding:16px 18px;border-radius:12px;background:hsl(217 24% 13%);border:1px solid hsl(217 55% 58%/.15);display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:9px;background:hsl(217 88% 58%/.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="hsl(217 85% 68%)" stroke-width="1.7" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg></div><div><div style="font-size:13px;font-weight:700;color:var(--fg)">Oracle Fusion</div><div style="font-size:10px;color:var(--fg3)">Supplier master & historical PO data</div></div></div>
+    <div style="padding:16px 18px;border-radius:12px;background:hsl(174 18% 12%);border:1px solid hsl(174 50% 40%/.15);display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:9px;background:hsl(174 65% 40%/.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="hsl(174 60% 52%)" stroke-width="1.7" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><div style="font-size:13px;font-weight:700;color:var(--fg)">Iron Mountain IdP</div><div style="font-size:10px;color:var(--fg3)">SSO — SAML 2.0 / OIDC</div></div></div>
+  </div>
+
+  <!-- FLOW ARROWS DOWN -->
+  <div style="display:flex;justify-content:center;gap:80px;padding:10px 0;color:var(--fg3)">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+  </div>
+
+  <!-- AERCHAIN PLATFORM -->
+  <div style="padding:28px 32px;border-radius:16px;background:var(--glass);border:1px solid var(--gb);margin-bottom:12px">
+    <div style="margin-bottom:20px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:hsl(262 80% 72%);display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:hsl(262 80% 55%)"></span>Aerchain Platform</span></div>
+
+    <!-- Intake + Route + Paths grid -->
+    <div style="display:grid;grid-template-columns:190px 56px 1fr 20px 1fr 20px 1fr;gap:0 10px;align-items:center;row-gap:10px">
+
+      <!-- Row 1: Intake + Route + Catalog path (spans col 3-4, right-aligned to col 5+7) -->
+      <div style="padding:18px;border-radius:10px;background:hsl(262 22% 14%);border:1.5px dashed hsl(262 50% 55%/.25);text-align:center;grid-row:1/4">
+        <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:4px">Aerchain Intake</div>
+        <div style="font-size:10px;color:var(--fg3);line-height:1.5">AI enrichment &<br>categorisation</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;grid-row:1/4">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 12 12" width="12" fill="none" stroke="var(--fg3)" stroke-width="1.5" stroke-linecap="round"><path d="M2 6h8M7 3l3 3-3 3"/></svg>
+          <div style="width:44px;height:44px;background:var(--gp);border-radius:9px;transform:rotate(45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px hsl(262 80% 55%/.2)"><span style="transform:rotate(-45deg);font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:700;color:white;letter-spacing:.05em">Route</span></div>
+          <svg viewBox="0 0 12 12" width="12" fill="none" stroke="var(--fg3)" stroke-width="1.5" stroke-linecap="round"><path d="M2 6h8M7 3l3 3-3 3"/></svg>
+        </div>
+      </div>
+
+      <!-- Catalog row: spans columns 3+4+5, then arrow, then col 7 -->
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(38 22% 12%);border:1px solid hsl(38 65% 48%/.18);border-top:2px solid hsl(38 92% 50%/.5);grid-column:3/6"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="width:7px;height:7px;border-radius:50%;background:hsl(38 92% 50%);flex-shrink:0"></span><span style="font-size:13px;font-weight:700;color:hsl(38 90% 64%)">Catalog auto PR-to-PO</span></div><div style="font-size:10px;color:var(--fg3)">Rate contract items, zero sourcing</div></div>
+      <div style="text-align:center;color:var(--fg3)"><svg viewBox="0 0 12 12" width="11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6h8M7 3l3 3-3 3"/></svg></div>
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(38 22% 12%);border:1px solid hsl(38 65% 48%/.18);border-top:2px solid hsl(38 92% 50%/.5)"><div style="font-size:13px;font-weight:700;color:hsl(38 90% 64%);margin-bottom:2px">Direct award</div><div style="font-size:10px;color:var(--fg3)">Auto writeback to ServiceNow SPO</div></div>
+
+      <!-- Bespoke row: col 3, arrow, col 5, arrow, col 7 -->
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(262 20% 13%);border:1px solid hsl(262 50% 55%/.18);border-top:2px solid hsl(262 80% 55%/.4)"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="width:7px;height:7px;border-radius:50%;background:hsl(262 80% 55%);flex-shrink:0"></span><span style="font-size:13px;font-weight:700;color:hsl(262 75% 72%)">Bespoke sourcing</span></div><div style="font-size:10px;color:var(--fg3)">Human oversight, complex categories</div></div>
+      <div style="text-align:center;color:var(--fg3)"><svg viewBox="0 0 12 12" width="11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6h8M7 3l3 3-3 3"/></svg></div>
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(262 20% 13%);border:1px solid hsl(262 50% 55%/.18);border-top:2px solid hsl(262 80% 55%/.4)"><div style="font-size:13px;font-weight:700;color:hsl(262 75% 72%);margin-bottom:2px">AI-assisted RFX</div><div style="font-size:10px;color:var(--fg3)">SOW creation, bid evaluation</div></div>
+      <div style="text-align:center;color:var(--fg3)"><svg viewBox="0 0 12 12" width="11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6h8M7 3l3 3-3 3"/></svg></div>
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(262 20% 13%);border:1px solid hsl(262 50% 55%/.18);border-top:2px solid hsl(262 80% 55%/.4)"><div style="font-size:13px;font-weight:700;color:hsl(262 75% 72%);margin-bottom:2px">Aerchain award</div><div style="font-size:10px;color:var(--fg3)">Multi-stakeholder scoring</div></div>
+
+      <!-- Autonomous row: col 3, arrow, col 5, arrow, col 7 -->
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(152 18% 12%);border:1px solid hsl(152 50% 42%/.18);border-top:2px solid hsl(152 68% 42%/.5)"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="width:7px;height:7px;border-radius:50%;background:hsl(14 72% 55%);flex-shrink:0"></span><span style="font-size:13px;font-weight:700;color:hsl(152 65% 58%)">Autonomous</span></div><div style="font-size:10px;color:var(--fg3)">Tactical + tail spend, AI within guardrails</div></div>
+      <div style="text-align:center;color:var(--fg3)"><svg viewBox="0 0 12 12" width="11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6h8M7 3l3 3-3 3"/></svg></div>
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(152 18% 12%);border:1px solid hsl(152 50% 42%/.18);border-top:2px solid hsl(152 68% 42%/.5)"><div style="font-size:13px;font-weight:700;color:hsl(152 65% 58%);margin-bottom:2px">AI-led sourcing</div><div style="font-size:10px;color:var(--fg3)">End-to-end, five agents</div></div>
+      <div style="text-align:center;color:var(--fg3)"><svg viewBox="0 0 12 12" width="11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6h8M7 3l3 3-3 3"/></svg></div>
+      <div style="padding:12px 16px;border-radius:9px;background:hsl(152 18% 12%);border:1px solid hsl(152 50% 42%/.18);border-top:2px solid hsl(152 68% 42%/.5)"><div style="font-size:13px;font-weight:700;color:hsl(152 65% 58%);margin-bottom:2px">Auto-award</div><div style="font-size:10px;color:var(--fg3)">Policy-governed, audit-ready</div></div>
+    </div>
+
+    <!-- sApp supplier portal bar -->
+    <div style="margin-top:16px;padding:11px 18px;border-radius:9px;background:hsl(14 18% 11%);border:1px solid hsl(14 55% 52%/.12);display:flex;align-items:center;gap:12px">
+      <span style="width:7px;height:7px;border-radius:50%;background:hsl(14 72% 55%);flex-shrink:0"></span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;color:hsl(14 68% 64%)">sApp — Supplier portal</span>
+      <span style="font-size:11px;color:var(--fg3);margin-left:4px">RFQ & bids, document exchange, negotiations, reverse auctions — all supplier interaction runs through sApp</span>
+    </div>
+  </div>
+
+  <!-- FLOW ARROWS DOWN -->
+  <div style="display:flex;justify-content:center;gap:80px;padding:10px 0;color:var(--fg3)">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+  </div>
+
+  <!-- DOWNSTREAM SYSTEMS -->
+  <div style="margin-bottom:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:hsl(152 65% 60%);display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:hsl(152 68% 42%)"></span>Downstream — Results Handoff</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+    <div style="padding:18px 20px;border-radius:12px;background:hsl(152 18% 11%);border:1px solid hsl(152 50% 42%/.18);display:flex;align-items:center;gap:14px"><div style="width:40px;height:40px;border-radius:10px;background:hsl(152 68% 42%/.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="hsl(152 65% 56%)" stroke-width="1.7" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div><div style="font-size:14px;font-weight:700;color:var(--fg)">ServiceNow SPO</div><div style="font-size:11px;color:hsl(152 65% 58%)">Results & award writeback</div></div></div>
+    <div style="padding:18px 20px;border-radius:12px;background:hsl(152 18% 11%);border:1px solid hsl(152 50% 42%/.18);display:flex;align-items:center;gap:14px"><div style="width:40px;height:40px;border-radius:10px;background:hsl(152 68% 42%/.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="hsl(152 65% 56%)" stroke-width="1.7" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div><div><div style="font-size:14px;font-weight:700;color:var(--fg)">Analytics</div><div style="font-size:11px;color:hsl(152 65% 58%)">Spend intelligence & savings</div></div></div>
+    <div style="padding:18px 20px;border-radius:12px;background:hsl(152 18% 11%);border:1px solid hsl(152 50% 42%/.18);display:flex;align-items:center;gap:14px"><div style="width:40px;height:40px;border-radius:10px;background:hsl(152 68% 42%/.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="hsl(152 65% 56%)" stroke-width="1.7" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/></svg></div><div><div style="font-size:14px;font-weight:700;color:var(--fg)">Audit Trail</div><div style="font-size:11px;color:hsl(152 65% 58%)">Sealed, immutable log</div></div></div>
+  </div>
+
+  <!-- VALUE METRICS -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+    <div style="padding:18px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;color:hsl(152 65% 58%)">~50%</div><div style="font-size:12px;font-weight:700;color:var(--fg);margin-top:4px">Cycle time reduction</div><div style="font-size:10px;color:var(--fg3)">PR to award compressed</div></div>
+    <div style="padding:18px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;color:hsl(262 80% 72%)">75%+</div><div style="font-size:12px;font-weight:700;color:var(--fg);margin-top:4px">Productivity uplift</div><div style="font-size:10px;color:var(--fg3)">FTE time freed for strategic work</div></div>
+    <div style="padding:18px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;color:hsl(38 90% 62%)">100%</div><div style="font-size:12px;font-weight:700;color:var(--fg);margin-top:4px">Category intelligence</div><div style="font-size:10px;color:var(--fg3)">Every event builds reusable AI memory</div></div>
+    <div style="padding:18px;border-radius:12px;background:var(--glass);border:1px solid var(--gb);text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;color:hsl(14 68% 62%)">1–2%</div><div style="font-size:12px;font-weight:700;color:var(--fg);margin-top:4px">Incremental savings</div><div style="font-size:10px;color:var(--fg3)">On addressable tactical spend</div></div>
+  </div>
+</div>
+
+<!-- AI AGENTS -->
+<div class="ch-break"></div>
+<div class="section" id="agents">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">03</div><div class="ch-sep"></div><span class="ch-time">AI Agent Architecture</span></div>
+    <h2>Five Agents, <span class="gt">One Platform</span></h2>
+    <div class="ch-sub">Each agent passes a structured data package — Transaction ID, Context, Payload, Status, and Audit Trail — ensuring complete traceability at every step.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+  <div class="cg cg5" style="margin-bottom:24px">
+    <div class="cd p"><div class="ci"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div><div class="cm">AGENT 01</div><div class="ct">Policy & Orchestration</div><div class="cx">Central routing brain. Evaluates every transaction against threshold rules, preferred supplier status, and category policies.</div><div class="pl pr">ROUTING ENGINE</div></div>
+    <div class="cd b"><div class="ci"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="cm">AGENT 02</div><div class="ct">Intake & Classification</div><div class="cx">Converts unstructured ServiceNow PRs into structured procurement specs. Auto-maps GL codes, cost centres, taxonomy.</div><div class="pl bl">NLP</div></div>
+    <div class="cd g"><div class="ci"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><div class="cm">AGENT 03</div><div class="ct">Supplier Selection</div><div class="cx">Searches preferred lists and external sources. Generates scored shortlists with compliance validation. Auto-generates RFx.</div><div class="pl lv">ACTIVE</div></div>
+    <div class="cd o"><div class="ci"><svg viewBox="0 0 24 24"><path d="m14.5 12.5-8 8a2.119 2.119 0 11-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/></svg></div><div class="cm">AGENT 04</div><div class="ct">AI Negotiation</div><div class="cx">Multi-round autonomous negotiations — price, lead time, payment terms. Live at Diageo, ABInBev, Unilever, NSE.</div><div class="pl rd">AI-DRIVEN</div></div>
+    <div class="cd am"><div class="ci"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div><div class="cm">AGENT 05</div><div class="ct">Results & Writeback</div><div class="cx">Pushes sourcing results, awarded supplier, and terms back to ServiceNow SPO via API. Ingests Oracle Fusion supplier data to enrich decisions.</div><div class="pl rd">SERVICENOW + ORACLE</div></div>
+  </div>
+</div>
+
+<!-- SECURITY -->
+<div class="ch-break"></div>
+<div class="section" id="security">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">04</div><div class="ch-sep"></div><span class="ch-time">Security & Compliance</span></div>
+    <h2><span class="gt">Enterprise-Grade</span> Security</h2>
+    <div class="ch-sub">Comprehensive security certifications, encryption standards, and governance controls built for Fortune 500 procurement environments.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+  <div class="cg cg4" style="margin-bottom:36px">
+    <div class="cd g"><div class="ci"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="ct">SOC 2 Type II</div><div class="cx">Independently audited. Covers security, availability, processing integrity, confidentiality, and privacy.</div><div class="pl lv">ACTIVE</div></div>
+    <div class="cd g"><div class="ci"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div><div class="ct">ISO 27001</div><div class="cx">Certified ISMS. Covers risk management, access control, cryptography, and operational security.</div><div class="pl lv">CERTIFIED</div></div>
+    <div class="cd b"><div class="ci"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="ct">GDPR Compliant</div><div class="cx">Full GDPR compliance — data minimisation, right to erasure, portability, breach notification.</div><div class="pl bl">COMPLIANT</div></div>
+    <div class="cd p"><div class="ci"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="ct">VAPT Certified</div><div class="cx">Regular third-party vulnerability assessment and penetration testing. Findings remediated within SLA.</div><div class="pl pr">TESTED</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:36px">
+      <div class="shield g"><div class="shield-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><div><div class="shield-title">AES-256 Encryption at Rest</div><div class="shield-desc">All data encrypted using AES-256 including database records, file storage, and backups</div></div></div>
+      <div class="shield p"><div class="shield-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg></div><div><div class="shield-title">SSO Integration (SAML 2.0 + OIDC)</div><div class="shield-desc">All 50 users authenticate through Iron Mountain's existing identity provider</div></div></div>
+      <div class="shield b"><div class="shield-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><div class="shield-title">TLS 1.2+ In Transit</div><div class="shield-desc">All data transmitted between browsers, APIs, and services encrypted via TLS 1.2+</div></div></div>
+      <div class="shield p"><div class="shield-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><div><div class="shield-title">Role-Based Access Control (RBAC)</div><div class="shield-desc">Granular roles: Sourcing Manager, Buyer, Approver, View-Only, Admin. Separation of duties enforced</div></div></div>
+      <div class="shield p"><div class="shield-icon"><svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div><div><div class="shield-title">AWS KMS Key Management</div><div class="shield-desc">Automatic key rotation. Customer-managed keys (CMK) available upon request</div></div></div>
+      <div class="shield g"><div class="shield-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><div class="shield-title">Multi-Factor Authentication</div><div class="shield-desc">MFA enforced for all access. TOTP, push notifications, hardware tokens supported</div></div></div>
+  </div>
+</div>
+
+<!-- INFRASTRUCTURE -->
+<div class="ch-break"></div>
+<div class="section" id="infra">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">05</div><div class="ch-sep"></div><span class="ch-time">Cloud Infrastructure</span></div>
+    <h2>AWS <span class="gt">Multi-Region</span> Architecture</h2>
+    <div class="ch-sub">Enterprise-grade infrastructure designed for high availability, auto-scaling, and geographic data residency compliance.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+  <div class="cg cg4" style="margin-bottom:28px">
+    <div class="cd g"><div class="ci"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="mv">99.9%</div><div class="ml">Platform Uptime SLA</div><div class="ms">Multi-AZ with auto-failover</div></div>
+    <div class="cd b"><div class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="mv">&lt;1hr</div><div class="ml">Recovery Time Objective</div><div class="ms">Automated failover to standby</div></div>
+    <div class="cd p"><div class="ci"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="mv">&lt;15min</div><div class="ml">Recovery Point Objective</div><div class="ms">Point-in-time backup recovery</div></div>
+    <div class="cd am"><div class="ci"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="mv">Annual</div><div class="ml">DR Testing Cadence</div><div class="ms">Documented failover drills</div></div>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>Layer</th><th>Technology</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td class="td-b">Cloud</td><td class="td-m">AWS</td><td>Multi-region; data residency configurable per jurisdiction</td></tr>
+      <tr><td class="td-b">Compute</td><td class="td-m">ECS / Fargate</td><td>Containerised microservices with auto-scaling</td></tr>
+      <tr><td class="td-b">Database</td><td class="td-m">RDS (PostgreSQL)</td><td>Multi-AZ, automated failover, encrypted at rest</td></tr>
+      <tr><td class="td-b">Storage</td><td class="td-m">S3</td><td>AES-256 encryption, versioning, lifecycle management</td></tr>
+      <tr><td class="td-b">CDN</td><td class="td-m">CloudFront</td><td>Global edge for low-latency access across 60 countries</td></tr>
+      <tr><td class="td-b">Monitoring</td><td class="td-m">CloudWatch + Datadog</td><td>Real-time alerting and anomaly detection</td></tr>
+      <tr><td class="td-b">Secrets</td><td class="td-m">Secrets Manager</td><td>Centralised rotation and access control</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- API SECURITY -->
+<div class="ch-break"></div>
+<div class="section" id="api">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">06</div><div class="ch-sep"></div><span class="ch-time">API & Integration Security</span></div>
+    <h2>Secure <span class="gt">API Framework</span></h2>
+    <div class="ch-sub">All integration points secured using enterprise-standard API security controls.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>Integration Point</th><th>Protocol</th><th>Auth</th><th>Security Controls</th></tr></thead>
+    <tbody>
+      <tr><td class="td-b">ServiceNow SPO → Aerchain</td><td class="td-m">REST (HTTPS)</td><td class="td-m">OAuth 2.0</td><td>IP whitelisting, TLS 1.2+, payload validation, idempotency</td></tr>
+      <tr><td class="td-b">Aerchain → Oracle Fusion</td><td class="td-m">REST (HTTPS)</td><td class="td-m">OAuth 2.0</td><td>IP whitelisting, TLS 1.2+, read-only supplier & PO data sync</td></tr>
+      <tr><td class="td-b">Aerchain → ServiceNow (results)</td><td class="td-m">REST (HTTPS)</td><td class="td-m">OAuth 2.0</td><td>Award writeback, webhook signatures, retry with backoff</td></tr>
+      <tr><td class="td-b">Iron Mountain IdP → Aerchain</td><td class="td-m">SAML 2.0 / OIDC</td><td class="td-m">SSO</td><td>Certificate trust, signed assertions, session mgmt</td></tr>
+      <tr><td class="td-b">Supplier Portal (sApp)</td><td class="td-m">HTTPS</td><td class="td-m">Email OTP</td><td>Time-limited tokens, CAPTCHA, session isolation</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- DATA FLOW & CLASSIFICATION -->
+<div class="ch-break"></div>
+<div class="section" id="dataflow">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">07</div><div class="ch-sep"></div><span class="ch-time">Data Flow & Classification</span></div>
+    <h2>What Data <span class="gt">Flows Where</span></h2>
+    <div class="ch-sub">A clear map of every data type that enters, passes through, and exits Aerchain — with classification, storage location, and retention posture.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+
+  <!-- Data flow table -->
+  <div class="ey b" style="margin-bottom:12px">Data Types & Classification</div>
+  <table class="tbl" style="margin-bottom:28px">
+    <thead><tr><th>Data Category</th><th>Classification</th><th>Source</th><th>Flows Through Aerchain?</th><th>Stored in Aerchain?</th><th>Encryption</th></tr></thead>
+    <tbody>
+      <tr><td class="td-b">Sourcing request metadata</td><td><span class="pl bl" style="margin:0">INTERNAL</span></td><td>ServiceNow SPO</td><td>Yes — ingested at intake</td><td>Yes — active transaction lifecycle</td><td>AES-256 at rest, TLS 1.2+ in transit</td></tr>
+      <tr><td class="td-b">Supplier company profiles</td><td><span class="pl bl" style="margin:0">INTERNAL</span></td><td>Oracle Fusion / sApp registration</td><td>Yes — matched and scored</td><td>Yes — supplier master within Aerchain</td><td>AES-256 at rest, TLS 1.2+ in transit</td></tr>
+      <tr><td class="td-b">Supplier contact PII</td><td><span class="pl pr" style="margin:0">SENSITIVE</span></td><td>Oracle Fusion / sApp</td><td>Yes — for communication and sApp access</td><td>Yes — name, email, phone only. Minimised.</td><td>AES-256 at rest, TLS 1.2+ in transit, field-level access control</td></tr>
+      <tr><td class="td-b">Bid / pricing data</td><td><span class="pl pr" style="margin:0">CONFIDENTIAL</span></td><td>Suppliers via sApp</td><td>Yes — evaluated by AI agents</td><td>Yes — sealed post-award, immutable</td><td>AES-256 at rest, TLS 1.2+ in transit, supplier-isolated</td></tr>
+      <tr><td class="td-b">Historical PO data</td><td><span class="pl bl" style="margin:0">INTERNAL</span></td><td>Oracle Fusion</td><td>Yes — ingested for AI enrichment</td><td>Yes — read-only reference copy</td><td>AES-256 at rest, TLS 1.2+ in transit</td></tr>
+      <tr><td class="td-b">Negotiation transcripts</td><td><span class="pl pr" style="margin:0">CONFIDENTIAL</span></td><td>Aerchain AI engine</td><td>Generated internally</td><td>Yes — full transcript in audit trail</td><td>AES-256 at rest, immutable log</td></tr>
+      <tr><td class="td-b">Award decisions & rationale</td><td><span class="pl pr" style="margin:0">CONFIDENTIAL</span></td><td>Aerchain AI engine</td><td>Generated internally, pushed to ServiceNow SPO</td><td>Yes — sealed audit record</td><td>AES-256 at rest, immutable log</td></tr>
+      <tr><td class="td-b">User credentials / tokens</td><td><span class="pl lv" style="margin:0">RESTRICTED</span></td><td>Iron Mountain IdP</td><td>SSO assertion only — no passwords stored</td><td>No — session tokens only, auto-expire</td><td>SAML signed assertions, TLS 1.2+</td></tr>
+      <tr><td class="td-b">Analytics / aggregated spend</td><td><span class="pl bl" style="margin:0">INTERNAL</span></td><td>Derived from transactions</td><td>Generated internally</td><td>Yes — dashboards and reports</td><td>AES-256 at rest, role-gated access</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Data residency & lifecycle -->
+  <div class="cg cg3" style="margin-bottom:24px">
+    <div class="cd b">
+      <div class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+      <div class="ct">Data Residency</div>
+      <div class="cx">All Iron Mountain data hosted on AWS. Region configurable per jurisdictional requirements. No data leaves the designated region without explicit configuration.</div>
+      <div class="pl bl">AWS MULTI-REGION</div>
+    </div>
+    <div class="cd p">
+      <div class="ci"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="ct">Tenant Isolation</div>
+      <div class="cx">Logical data isolation at application, database, and storage layers. Iron Mountain's data is fully segregated from all other Aerchain customers. No cross-tenant data access.</div>
+      <div class="pl pr">LOGICALLY ISOLATED</div>
+    </div>
+    <div class="cd g">
+      <div class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+      <div class="ct">Data Lifecycle</div>
+      <div class="cx">Configurable retention policies. Active transaction data retained for contract duration. Post-termination data purge per agreed schedule. Right to erasure supported.</div>
+      <div class="pl lv">CONFIGURABLE</div>
+    </div>
+  </div>
+
+  <div class="qt"><div class="qt-bar"></div><div class="qt-text"><b>Key principle:</b> Aerchain stores only the data necessary to execute and audit sourcing events. No financial data (bank accounts, payment instruments) is stored. Supplier PII is minimised to contact information only. Credentials are never stored — authentication is handled entirely through Iron Mountain's IdP via SAML/OIDC assertions.</div></div>
+</div>
+
+
+<!-- AI / LLM MODEL GOVERNANCE -->
+<div class="ch-break"></div>
+<div class="section" id="aimodel">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">08</div><div class="ch-sep"></div><span class="ch-time">AI & LLM Model Governance</span></div>
+    <h2>How Aerchain's <span class="gt">AI Works</span></h2>
+    <div class="ch-sub">Aerchain is an AI-native platform. This section addresses the questions Iron Mountain's InfoSec team will have about model training, data usage, tenant isolation in the AI layer, and explainability.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+
+  <!-- Core AI governance cards -->
+  <div class="cg cg2" style="margin-bottom:24px">
+    <div class="cd o" style="padding:26px">
+      <div class="ci"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="ct" style="font-size:18px;margin-bottom:10px">Customer data is never used for model training</div>
+      <div class="cx" style="font-size:14px">Iron Mountain's sourcing data, supplier data, pricing data, and transaction data are <b style="color:var(--fg)">never used to train, fine-tune, or improve any shared or public AI models</b>. This is a hard architectural constraint, not a policy toggle. Customer data exists only within the customer's tenant boundary.</div>
+      <div class="pl lv" style="margin-top:12px">CONFIRMED — NO TRAINING ON CUSTOMER DATA</div>
+    </div>
+    <div class="cd p" style="padding:26px">
+      <div class="ci"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg></div>
+      <div class="ct" style="font-size:18px;margin-bottom:10px">Complete AI tenant isolation</div>
+      <div class="cx" style="font-size:14px">Each customer's AI processing is <b style="color:var(--fg)">logically isolated</b>. AI agents operating on Iron Mountain's data cannot access, reference, or be influenced by any other customer's data. Model context windows are scoped per-tenant, per-transaction.</div>
+      <div class="pl pr" style="margin-top:12px">TENANT-SCOPED AI EXECUTION</div>
+    </div>
+  </div>
+
+  <!-- AI architecture detail -->
+  <div class="ey o" style="margin-bottom:12px">AI Architecture Detail</div>
+  <table class="tbl" style="margin-bottom:28px">
+    <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+    <tbody>
+      <tr><td class="td-b">What AI/LLM models does Aerchain use?</td><td>Proprietary agentic AI framework with multi-agent orchestration. LLM capabilities leverage enterprise-grade API providers with data processing agreements in place. No customer data sent to consumer-grade LLM services.</td></tr>
+      <tr><td class="td-b">Where does AI inference happen?</td><td>All AI inference runs on Aerchain's own cloud infrastructure (AWS). No customer data is processed on third-party inference endpoints without explicit DPA and security review.</td></tr>
+      <tr><td class="td-b">Is there cross-tenant learning?</td><td>No. Each tenant's AI operates within its own data boundary. Category intelligence and negotiation models are trained per-tenant. No data or model weights are shared across customers.</td></tr>
+      <tr><td class="td-b">How are AI decisions made explainable?</td><td>Every AI agent decision includes a structured rationale: input data, decision logic, confidence score, and output. Full audit chain from intake to award. Human-readable explanations available for every supplier selection, bid ranking, and negotiation move.</td></tr>
+      <tr><td class="td-b">Can Iron Mountain disable AI autonomy?</td><td>Yes. The platform supports granular autonomy controls. AI can be set to recommend-only (human approves) or fully autonomous per category, per threshold, per region. Configurable at any time.</td></tr>
+      <tr><td class="td-b">How is AI bias mitigated?</td><td>Evaluation criteria are defined by Iron Mountain's procurement team, not by the AI. The AI executes against defined parameters (price, lead time, compliance) with weighted scoring. Scoring logic is transparent and auditable.</td></tr>
+      <tr><td class="td-b">What happens if the AI makes an error?</td><td>All AI decisions are logged with full rollback capability. In Tactical mode, a human reviews every recommendation before it becomes binding. In Autonomous mode, policy guardrails enforce threshold limits and escalation rules.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- AI data flow visual -->
+  <div class="cg cg3">
+    <div class="cd g">
+      <div class="ci"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+      <div class="ct">Data In → AI Processing</div>
+      <div class="cx">ServiceNow SPO metadata + Oracle supplier data enters the AI layer. Data is scoped to the active transaction only. No persistent AI memory across unrelated transactions unless explicitly configured.</div>
+    </div>
+    <div class="cd b">
+      <div class="ci"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg></div>
+      <div class="ct">Agent Execution</div>
+      <div class="cx">Five specialised agents process sequentially. Each handoff is logged. No agent has access to data outside its designated scope. Context windows are cleared between transactions.</div>
+    </div>
+    <div class="cd am">
+      <div class="ci"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+      <div class="ct">Decision Out → Audit</div>
+      <div class="cx">AI output (supplier recommendation, award decision, negotiation result) is written to the immutable audit log with full rationale before any downstream action (ServiceNow writeback) is triggered.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- GOVERNANCE -->
+<div class="ch-break"></div>
+<div class="section" id="governance">
+  <div class="ch"><div class="ch-ey"><div class="ch-num">09</div><div class="ch-sep"></div><span class="ch-time">Governance & Audit</span></div>
+    <h2>Immutable <span class="gt">Audit Trail</span></h2>
+    <div class="ch-sub">Every action, decision, and event recorded in a tamper-proof log — designed for full regulatory compliance.</div>
+    <div class="ch-sdiv"></div>
+  </div>
+  <div class="cg cg3" style="margin-bottom:28px">
+    <div class="cd g"><div class="ci"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/></svg></div><div class="ct">Immutable Audit Log</div><div class="cx">Tamper-proof log — timestamp, user ID, IP, action type, data snapshot for every event.</div><div class="pl lv">SEALED</div></div>
+    <div class="cd b"><div class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="ct">AI Decision Explainability</div><div class="cx">Every AI decision includes human-readable rationale — why a supplier was selected, why a bid was ranked.</div><div class="pl bl">EXPLAINABLE</div></div>
+    <div class="cd am"><div class="ci"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div><div class="ct">Compliance Reporting</div><div class="cx">Pre-built reports: policy adherence, threshold violations, override tracking, savings attribution.</div><div class="pl rd">ON-DEMAND</div></div>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>Event Category</th><th>Examples</th><th>Logged Data</th></tr></thead>
+    <tbody>
+      <tr><td class="td-b">User Actions</td><td>Login, logout, approval, rejection</td><td>User ID, IP, timestamp, before/after state</td></tr>
+      <tr><td class="td-b">AI Decisions</td><td>Classification, routing, selection, negotiation, award</td><td>Agent ID, input, rationale, confidence, output</td></tr>
+      <tr><td class="td-b">System Events</td><td>API calls, integration syncs, imports/exports</td><td>Request ID, source, payload hash, response status</td></tr>
+      <tr><td class="td-b">Policy Events</td><td>Threshold breaches, overrides, escalations</td><td>Rule triggered, user, justification text</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:16px">
+    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTY4IiBoZWlnaHQ9IjMyIiB2aWV3Qm94PSIwIDAgMTY4IDMyIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZyBjbGlwLXBhdGg9InVybCgjY2xpcDBfMTY0NTVfMTEwNDA4KSI+CjxwYXRoIGQ9Ik0zLjc5NTEgMjYuOTg5NUMzLjYxMzk2IDI3LjM5MzcgMy40MzI4MiAyNy42NjE2IDMuMjU0IDI3Ljc5NTZDMy4wNzI4NiAyNy45Mjk1IDIuODAxMTUgMjcuOTk3NyAyLjQ0MTE5IDI3Ljk5NzdIMC42Nzg1NjlDMC4yMjU3MjEgMjcuOTk3NyAwLjAwMDQ1Nzc2NCAyNy44NTIgMC4wMDA0NTc3NjQgMjcuNTYwNkMwLjAwMDQ1Nzc2NCAyNy40NDc4IDAuMDU2MTkzIDI3LjI1NzQgMC4xNjk5ODYgMjYuOTg5NUwxMC4zNjcyIDUuNjgwMjFDMTAuNzA2MyA0Ljk4Njk4IDEwLjk1NDcgNC41MzEwOSAxMS4xMTI3IDQuMzE5NTlDMTEuMjcwNiA0LjEwNTc1IDExLjQ2MzMgNCAxMS42ODg2IDRDMTEuODkzIDQgMTIuMDY3MSA0LjEwNTc1IDEyLjIxMzQgNC4zMTk1OUMxMi4zNTk3IDQuNTMzNDQgMTIuNjAzNiA0Ljk4Njk4IDEyLjk0MjYgNS42ODAyMUwyMy4yNDIgMjYuOTg5NUMyMy4zNTU4IDI3LjI1NzQgMjMuNDExNiAyNy40NTAxIDIzLjQxMTYgMjcuNTYwNkMyMy40MTE2IDI3Ljg1MiAyMy4xNzQ3IDI3Ljk5NzcgMjIuNzAwOSAyNy45OTc3SDIwLjgwMzZDMjAuNDQxMyAyNy45OTc3IDIwLjE3NjYgMjcuOTI5NSAyMC4wMDcxIDI3Ljc5NTZDMTkuODM3NSAyNy42NjE2IDE5LjY1MTggMjcuMzkxNCAxOS40NDc0IDI2Ljk4OTVMMTEuNjIxMiAxMC4yNTA5TDMuNzk1MSAyNi45ODk1WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQwLjUyMjEgMjQuODk1N0M0MC42MzU5IDI0Ljk5OTEgNDAuNjkxNiAyNS4xOTg5IDQwLjY5MTYgMjUuNDk1VjI3LjI0MzNDNDAuNjkxNiAyNy41NDE4IDQwLjYzNTkgMjcuNzQxNSA0MC41MjIxIDI3Ljg0MjZDNDAuNDA4MyAyNy45NDYgNDAuMjE3OSAyNy45OTc3IDM5Ljk0NjIgMjcuOTk3N0gyNy4xMDYyQzI2LjgzNDUgMjcuOTk3NyAyNi42NDQgMjcuOTQ2IDI2LjUzMDIgMjcuODQyNkMyNi40MTY1IDI3LjczOTIgMjYuMzYwNyAyNy41Mzk0IDI2LjM2MDcgMjcuMjQzM1Y0Ljc1NDMzQzI2LjM2MDcgNC40NTgyNCAyNi40MTY1IDQuMjU2MTQgMjYuNTMwMiA0LjE1NTFDMjYuNjQxNyA0LjA1MTcgMjYuODM0NSA0IDI3LjEwMzkgNEgzOS45MTEzQzQwLjE4MyA0IDQwLjM3MzUgNC4wNTE3IDQwLjQ4NzMgNC4xNTUxQzQwLjYwMTEgNC4yNTg0OSA0MC42NTY4IDQuNDU4MjQgNDAuNjU2OCA0Ljc1NDMzVjYuNTAyNjlDNDAuNjU2OCA2LjgwMTE0IDQwLjYwMTEgNy4wMDA4OCA0MC40ODczIDcuMTAxOTNDNDAuMzczNSA3LjIwNTMzIDQwLjE4MyA3LjI1NzAzIDM5LjkxMTMgNy4yNTcwM0gzMC4xNTNDMjkuOTk1MSA3LjI1NzAzIDI5Ljg4ODMgNy4yODUyMyAyOS44MzAyIDcuMzQxNjJDMjkuNzc0NSA3LjM5ODAyIDI5Ljc0NjYgNy40OTY3MiAyOS43NDY2IDcuNjMzMDJWMTMuOTA3NEMyOS43NDY2IDE0LjA2NzIgMjkuNzc0NSAxNC4xNzUzIDI5LjgzMDIgMTQuMjM0QzI5Ljg4NiAxNC4yOTA0IDI5Ljk5MjggMTQuMzE4NiAzMC4xNTMgMTQuMzE4NkgzOC43NTk1QzM5LjAzMTIgMTQuMzE4NiAzOS4yMjE2IDE0LjM3MDMgMzkuMzM1NCAxNC40NzM3QzM5LjQ0OTIgMTQuNTc3MSAzOS41MDQ5IDE0Ljc3NjkgMzkuNTA0OSAxNS4wNzI5VjE2Ljc4NjFDMzkuNTA0OSAxNy4wNjEgMzkuNDQ5MiAxNy4yNTM3IDM5LjMzNTQgMTcuMzY4OEMzOS4yMjE2IDE3LjQ4NCAzOS4wMzEyIDE3LjU0MDQgMzguNzU5NSAxNy41NDA0SDMwLjE1M0MyOS45OTUxIDE3LjU0MDQgMjkuODg4MyAxNy41Njg2IDI5LjgzMDIgMTcuNjI1QzI5Ljc3NDUgMTcuNjgxNCAyOS43NDY2IDE3Ljc4MDEgMjkuNzQ2NiAxNy45MTY0VjI0LjM2MjNDMjkuNzQ2NiAyNC40OTg2IDI5Ljc3NDUgMjQuNTk3MyAyOS44MzAyIDI0LjY1MzdDMjkuODg2IDI0LjcxMDEgMjkuOTkyOCAyNC43MzgzIDMwLjE1MyAyNC43MzgzSDM5Ljk0MzhDNDAuMjE1NiAyNC43MzgzIDQwLjQwNiAyNC43OSA0MC41MTk4IDI0Ljg5MzRMNDAuNTIyMSAyNC44OTU3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQ4LjcxOTggMjcuODQ0OUM0OC42MDYgMjcuOTQ4MyA0OC40MTU2IDI4IDQ4LjE0MzkgMjhINDYuMjQ2NkM0NS45NzQ4IDI4IDQ1Ljc4NDQgMjcuOTQ4MyA0NS42NzA2IDI3Ljg0NDlDNDUuNTU2OCAyNy43NDE1IDQ1LjUwMTEgMjcuNTQxOCA0NS41MDExIDI3LjI0NTdWNC43NTQzM0M0NS41MDExIDQuNDU4MjQgNDUuNTU2OCA0LjI1NjE0IDQ1LjY3MDYgNC4xNTUxQzQ1Ljc4NDQgNC4wNTE3IDQ1Ljk3NzIgNCA0Ni4yNDY2IDRINTIuNzE4OEM1OS4xNTYyIDQgNjIuMzc0OSA2LjQ3OTE5IDYyLjM3NDkgMTEuNDM5OUM2Mi4zNzQ5IDEzLjA4NDkgNjEuOTY4NSAxNC40NDA4IDYxLjE1NTcgMTUuNTAzQzYwLjM0MjkgMTYuNTY1MiA1OS4yMTIgMTcuMzUgNTcuNzY3NSAxNy44NTA2TDYzLjU5NDEgMjYuOTcwN0M2My43NzUzIDI3LjIyMjIgNjMuODY1OSAyNy40Mzg0IDYzLjg2NTkgMjcuNjIxN0M2My44NjU5IDI3Ljc1OCA2My44MDMxIDI3Ljg1NjcgNjMuNjgwMSAyNy45MTMxQzYzLjU1NDcgMjcuOTY5NSA2My4zNjg5IDI3Ljk5NzcgNjMuMTIwNCAyNy45OTc3SDYxLjEyMDlDNjAuNzM3NyAyNy45OTc3IDYwLjQ1NDQgMjcuOTQxMyA2MC4yNzMzIDI3LjgyNjFDNjAuMDkyMSAyNy43MTEgNTkuODc4NSAyNy40NjE5IDU5LjYzIDI3LjA3MThMNTMuMzk2OSAxNy4wNjFDNTMuMjYyMiAxNi44Nzc3IDUzLjE5MjYgMTYuNzE3OSA1My4xOTI2IDE2LjU4MTZDNTMuMTkyNiAxNi4zOTgzIDUzLjM2MjEgMTYuMjk0OSA1My43MDExIDE2LjI3MzhDNTcuMTEyNiAxNS45MDk1IDU4LjgxNzIgMTQuMzY1NiA1OC44MTcyIDExLjY0NDRDNTguODE3MiAxMC4wOTExIDU4LjI4MDcgOC45NTM2OSA1Ny4yMDc4IDguMjMyMjVDNTYuMTM0OSA3LjUxMzE3IDU0LjU4MTMgNy4xNTEyOCA1Mi41NDkzIDcuMTUxMjhINDkuMjk1N0M0OS4xMzc4IDcuMTUxMjggNDkuMDMxIDcuMTc5NDggNDguOTcyOSA3LjIzNTg4QzQ4LjkxNzIgNy4yOTIyNyA0OC44ODkzIDcuNDAyNzIgNDguODg5MyA3LjU2MjUyVjI3LjI0MUM0OC44ODkzIDI3LjUzOTQgNDguODMzNiAyNy43MzkyIDQ4LjcxOTggMjcuODQwMlYyNy44NDQ5WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTg0LjU5OTEgMjIuNDQ3MUM4NC44NDc2IDIyLjI0NzMgODUuMDQwNCAyMi4xNDg2IDg1LjE3NTEgMjIuMTQ4NkM4NS4yNjU2IDIyLjE0ODYgODUuMzU2MiAyMi4xODE1IDg1LjQ0NjggMjIuMjQ3M0M4NS41Mzc0IDIyLjMxMzEgODUuNjE2MyAyMi4zOTA3IDg1LjY4MzcgMjIuNDhMODYuNjY2IDIzLjgxQzg2Ljc3OTggMjMuOTQ0IDg2LjgzNTUgMjQuMDk5MSA4Ni44MzU1IDI0LjI3NTNDODYuODM1NSAyNC4zNjQ2IDg2LjgwMDcgMjQuNDU4NiA4Ni43MzMzIDI0LjU1NzNDODYuNjY2IDI0LjY1NiA4Ni41NjM4IDI0Ljc2MTggODYuNDI5MSAyNC44NzIyQzg1LjIzMDggMjUuODY4NiA4My44ODE1IDI2LjYzOTQgODIuMzgxMyAyNy4xODIyQzgwLjg3ODggMjcuNzI1MSA3OS4zMDQzIDI3Ljk5NzcgNzcuNjU1NSAyNy45OTc3Qzc1LjQ0MjMgMjcuOTk3NyA3My40MTUgMjcuNDg3NyA3MS41NzM0IDI2LjQ2NzhDNjkuNzMxOCAyNS40NDggNjguMjc1NyAyNC4wMzA5IDY3LjIwMjggMjIuMjEyMUM2Ni4xMjk5IDIwLjM5NTYgNjUuNTkzNCAxOC4zNTU4IDY1LjU5MzQgMTYuMDk1MkM2NS41OTM0IDEzLjgzNDUgNjYuMTI5OSAxMS43NTI1IDY3LjIwMjggOS45MTI0N0M2OC4yNzU3IDguMDcyNDYgNjkuNzQzNCA2LjYyNzI0IDcxLjYwODIgNS41NzQ0NkM3My40NzA3IDQuNTI2MzkgNzUuNTUzOCA0IDc3Ljg1NzUgNEM3OS40ODMxIDQgODEuMDM2NyA0LjI3NzI5IDgyLjUxNiA0LjgzMTg4QzgzLjk5NTMgNS4zODY0NyA4NS4zMTIxIDYuMTQwOCA4Ni40NjQgNy4wOTI1M0M4Ni42ODkyIDcuMjQ3NjMgODYuODAzIDcuNDE0NDcgODYuODAzIDcuNTkwNzJDODYuODAzIDcuNzQ1ODEgODYuNzM1NyA3LjkyMjA2IDg2LjU5ODYgOC4xMjE4MUw4NS42MTYzIDkuNDE4OThDODUuNDM1MiA5LjY2MzM3IDg1LjI1NCA5Ljc4NTU3IDg1LjA3NTIgOS43ODU1N0M4NC45NDA1IDkuNzg1NTcgODQuNzQ3OCA5LjY5NjI3IDg0LjQ5OTMgOS41MjAwMkM4My41Mjg2IDguNzg5MTkgODIuNDc2NiA4LjIxMzQ1IDgxLjM0NzkgNy43OTA0NkM4MC4yMTkzIDcuMzY5ODIgNzkuMDMyNiA3LjE1ODMzIDc3Ljc5MDIgNy4xNTgzM0M3Ni4xODU1IDcuMTU4MzMgNzQuNzI0NyA3LjUzNDMyIDczLjQwMzMgOC4yODg2NUM3Mi4wODE5IDkuMDQyOTggNzEuMDM2OSAxMC4wOTU4IDcwLjI2ODIgMTEuNDQ3QzY5LjQ5OTUgMTIuNzk4MiA2OS4xMTY0IDE0LjMyOCA2OS4xMTY0IDE2LjAzNDFDNjkuMTE2NCAxNy43NDAxIDY5LjQ5NDkgMTkuMTY4OSA3MC4yNTIgMjAuNTIyNUM3MS4wMDkgMjEuODczNyA3Mi4wNDcxIDIyLjkzMzUgNzMuMzY4NSAyMy42OTczQzc0LjY4OTkgMjQuNDYxIDc2LjE2NDYgMjQuODQ0IDc3Ljc5MDIgMjQuODQ0QzgwLjM0MjQgMjQuODQ0IDgyLjYxMTMgMjQuMDQ3NCA4NC41OTkxIDIyLjQ1MThWMjIuNDQ3MVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xMDkuNDAxIDI3Ljg0NDlDMTA5LjI4OCAyNy45NDgzIDEwOS4wOTcgMjggMTA4LjgyNiAyOEgxMDYuOTI4QzEwNi42NTcgMjggMTA2LjQ2NiAyNy45NDgzIDEwNi4zNTIgMjcuODQ0OUMxMDYuMjM4IDI3Ljc0MTUgMTA2LjE4MyAyNy41NDE4IDEwNi4xODMgMjcuMjQ1N1YxNy42ODE0QzEwNi4xODMgMTcuNTQ1MSAxMDYuMTU1IDE3LjQ0NjQgMTA2LjA5OSAxNy4zOUMxMDYuMDQzIDE3LjMzMzYgMTA1LjkzNCAxNy4zMDU0IDEwNS43NzYgMTcuMzA1NEg5NC41NjJDOTQuNDA0MSAxNy4zMDU0IDk0LjI5NzIgMTcuMzMzNiA5NC4yMzkyIDE3LjM5Qzk0LjE4MzQgMTcuNDQ2NCA5NC4xNTU2IDE3LjU0NTEgOTQuMTU1NiAxNy42ODE0VjI3LjI0NTdDOTQuMTU1NiAyNy41NDQxIDk0LjA5OTggMjcuNzQzOSA5My45ODYgMjcuODQ0OUM5My44NzIyIDI3Ljk0ODMgOTMuNjgxOCAyOCA5My40MTAxIDI4SDkxLjUxMjhDOTEuMjQxMSAyOCA5MS4wNTA3IDI3Ljk0ODMgOTAuOTM2OSAyNy44NDQ5QzkwLjgyMzEgMjcuNzQxNSA5MC43NjczIDI3LjU0MTggOTAuNzY3MyAyNy4yNDU3VjQuNzU0MzNDOTAuNzY3MyA0LjQ1ODI0IDkwLjgyMzEgNC4yNTYxNCA5MC45MzY5IDQuMTU1MUM5MS4wNDgzIDQuMDUxNyA5MS4yNDExIDQgOTEuNTEwNSA0SDkzLjQwNzhDOTMuNjc5NSA0IDkzLjg3MjMgNC4wNTE3IDkzLjk4MzcgNC4xNTUxQzk0LjA5NzUgNC4yNTg0OSA5NC4xNTMyIDQuNDU4MjQgOTQuMTUzMiA0Ljc1NDMzVjEzLjY2NzdDOTQuMTUzMiAxMy44MDQgOTQuMTgxMSAxMy45MDc0IDk0LjIzNjkgMTMuOTc1NUM5NC4yOTI2IDE0LjA0MzcgOTQuMzk5NCAxNC4wNzg5IDk0LjU1OTYgMTQuMDc4OUgxMDUuNzc0QzEwNS45MzIgMTQuMDc4OSAxMDYuMDM5IDE0LjA0MzcgMTA2LjA5NyAxMy45NzU1QzEwNi4xNTMgMTMuOTA3NCAxMDYuMTggMTMuODA0IDEwNi4xOCAxMy42Njc3VjQuNzU0MzNDMTA2LjE4IDQuNDU4MjQgMTA2LjIzNiA0LjI1NjE0IDEwNi4zNSA0LjE1NTFDMTA2LjQ2NCA0LjA1MTcgMTA2LjY1NyA0IDEwNi45MjggNEgxMDguODI2QzEwOS4wOTUgNCAxMDkuMjg4IDQuMDUxNyAxMDkuNDAxIDQuMTU1MUMxMDkuNTE1IDQuMjU4NDkgMTA5LjU3MSA0LjQ1ODI0IDEwOS41NzEgNC43NTQzM1YyNy4yNDU3QzEwOS41NzEgMjcuNTQ0MSAxMDkuNTE1IDI3Ljc0MzkgMTA5LjQwMSAyNy44NDQ5WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTE2NC4yNTIgNC4xNTA0QzE2NC4zNjYgNC4wNDkzNSAxNjQuNTU4IDQgMTY0LjgyOCA0SDE2Ni43MjVDMTY2Ljk5NyA0IDE2Ny4xODkgNC4wNDkzNSAxNjcuMzAxIDQuMTUwNEMxNjcuNDE1IDQuMjQ5MDkgMTY3LjQ3IDQuNDQ0MTQgMTY3LjQ3IDQuNzMzMThWMjYuOTA0OUMxNjcuNDcgMjcuNjM1OCAxNjcuMjQ1IDI4LjAwMjMgMTY2Ljc5MiAyOC4wMDIzQzE2Ni42MTEgMjguMDAyMyAxNjYuNDIxIDI3LjkyOTUgMTY2LjIxNiAyNy43ODYyQzE2Ni4wMTIgMjcuNjQyOCAxNjUuNzMxIDI3LjM3MDIgMTY1LjM2OSAyNi45NzA3TDE1MS42MTQgMTEuMDQ5OFYyNi45MDQ5QzE1MS42MTQgMjcuMTk0IDE1MS41NTggMjcuMzg2NyAxNTEuNDQ0IDI3LjQ4NzdDMTUxLjMzIDI3LjU4NjQgMTUxLjE0IDI3LjYzODEgMTUwLjg2OCAyNy42MzgxSDE0OC45NzFDMTQ4LjY5OSAyNy42MzgxIDE0OC41MDkgMjcuNTg4OCAxNDguMzk1IDI3LjQ4NzdDMTQ4LjI4MSAyNy4zODkgMTQ4LjIyNiAyNy4xOTQgMTQ4LjIyNiAyNi45MDQ5VjUuMDk3NDJDMTQ4LjIyNiA0LjcyMTQzIDE0OC4yODEgNC40NDQxNCAxNDguMzk1IDQuMjY1NTRDMTQ4LjUwOSA0LjA4OTMgMTQ4LjY5IDQgMTQ4LjkzOSA0QzE0OS4xMiA0IDE0OS4zMSA0LjA3Mjg1IDE0OS41MTQgNC4yMTYyQzE0OS43MTkgNC4zNTk1NCAxNDkuOTg4IDQuNjMyMTQgMTUwLjMyNyA1LjAzMTYzTDE2NC4wODIgMjAuOTUyNVY0LjczMDgzQzE2NC4wODIgNC40NDQxNCAxNjQuMTM4IDQuMjQ5MDkgMTY0LjI1MiA0LjE0ODA1VjQuMTUwNFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xNDMuNzMyIDE4LjcwODNDMTQzLjcyIDE4LjY1MTkgMTQzLjcwNCAxOC40OTQ0IDE0My42OTkgMTguNDE5M0MxNDMuNzA0IDE4LjQzNTcgMTQzLjczIDE4LjY3NTQgMTQzLjczMiAxOC43MDgzWiIgZmlsbD0iI0RDNUY0MCIvPgo8cGF0aCBkPSJNMTQxLjYxMyAxMS4wOEMxNDIuNjk4IDEwLjk2MDIgMTQzLjQ4MyA5Ljk3MzIgMTQzLjM2NCA4Ljg3MzQyQzE0My4yNDYgNy43NzYgMTQyLjI3IDYuOTgxNzEgMTQxLjE4NCA3LjEwMTU2QzE0MC4wOTkgNy4yMjE0MSAxMzkuMzE0IDguMjA4MzkgMTM5LjQzMyA5LjMwODE2QzEzOS41NTEgMTAuNDA1NiAxNDAuNTI2IDExLjE5OTkgMTQxLjYxMyAxMS4wOFoiIGZpbGw9IiNEQzVGNDAiLz4KPHBhdGggZD0iTTE0My44NTcgMjAuNjI1NEMxNDMuOTQzIDE2LjE2OTkgMTQyLjA5MiAxMC43Njc0IDEzNy4yNTIgMTMuODM2NEMxMzYuODQ2IDEzLjk5NjIgMTM2LjYxNCAxMy45Mzk4IDEzNi40IDEzLjYzNDNDMTM1Ljc4OSAxMi41MTU4IDEzNS4zMiAxMS4zNzEzIDEzNC43MzkgMTAuMTk2NEMxMzAuMzcxIC0xLjE3NTAxIDEyNS4zODMgNS4zMjcyOSAxMjAuMTE0IDEyLjA1NzVDMTA4LjM0NyAyNy40NDk3IDExMy44OSAzNC4yNjY5IDEzMi40MzggMjAuNzVDMTMzLjA4NiAyMC4yODQ3IDEzNC4zODQgMTkuMzExOCAxMzQuODUxIDE5LjI3MTlDMTM1LjM0MyAxOS4xOTIgMTM1LjU0OCAxOS41OTYyIDEzNS45MTkgMjAuNDQyMUMxMzYuMjc5IDIxLjMwOTMgMTM2Ljg3OCAyMi41MzgzIDEzNy40MjYgMjMuNDE0OEMxNDAuNTkyIDI5LjYzMDQgMTQ0LjA5OCAyOC4xODk5IDE0My44NTkgMjAuNjUxM1YyMC42MjU0SDE0My44NTdaTTEyOS45MDkgMTguMzA4NEMxMjcuNTc1IDE5Ljc4NDIgMTI1LjM2IDIxLjU5MTMgMTIyLjc5NiAyMi42Njk5QzEyMS42NzkgMjMuMTQyMiAxMjAuMDUxIDIyLjYyMDUgMTE5LjY0OSAyMS43MDY0QzExOS4xOTQgMjAuMjg5NCAxMjAuODIyIDE4LjIwMDMgMTIxLjYyMSAxNi43MjkyQzEyMi41NDcgMTUuMDUzNyAxMjMuNzc2IDEzLjU2MzggMTI0Ljk1MyAxMi4wNDU4QzEyNi4wOTYgMTAuNTQ4OSAxMjcuNjQ3IDguMzI4MTcgMTI5Ljc5OCA5LjI5ODdDMTMxLjUyMyAxMC4yOTA0IDEzMi4yMzEgMTMuMDMyOCAxMzMuMjE4IDE0LjY4NzFDMTMzLjY2NCAxNS40MDM5IDEzMy42NSAxNS45MTE0IDEzMi44NyAxNi4zNDM4QzEzMS45MjUgMTYuOTUyNSAxMzAuOTAxIDE3LjY0NTcgMTI5LjkyOCAxOC4yOTlMMTI5LjkwOSAxOC4zMTA3VjE4LjMwODRaTTE0Mi41NTYgMjEuMjQzNUMxNDIuNTA1IDIyLjA5NjUgMTQyLjM0NSAyNS4zMjMgMTQxLjI3IDIzLjc4NjFDMTQwLjI3MSAyMS44ODc0IDEzOS4xNzUgMTkuNTIxIDEzOC4xOTcgMTcuNDk3N0MxMzcuODE3IDE2LjQ2MzcgMTQwLjE5MiAxNi4wNDU0IDE0MC44MSAxNi4yMjE2QzE0Mi41MzUgMTYuODY1NSAxNDIuNTk2IDE5LjYxOTcgMTQyLjU1NiAyMS4yMjk0VjIxLjI0NThWMjEuMjQzNVoiIGZpbGw9IiNEQzVGNDAiLz4KPC9nPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSJjbGlwMF8xNjQ1NV8xMTA0MDgiPgo8cmVjdCB3aWR0aD0iMTY4IiBoZWlnaHQ9IjMyIiBmaWxsPSJ3aGl0ZSIvPgo8L2NsaXBQYXRoPgo8L2RlZnM+Cjwvc3ZnPgo=" alt="Aerchain" height="26" class="logo-aer">
+    <span style="font-size:14px;font-weight:300;color:var(--fg3)">×</span>
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI0LjIuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAyMDguOSA1OC45IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCAyMDguOSA1OC45OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+Cgkuc3Qwe29wYWNpdHk6MC43NTtmaWxsOiMxMzQ4N0Q7fQoJLnN0MXtvcGFjaXR5OjAuNzU7ZmlsbDojMUM3NUJDO30KCS5zdDJ7b3BhY2l0eTowLjc1O2ZpbGw6IzZEQ0ZGNjt9Cjwvc3R5bGU+CjxnPgoJPGc+CgkJPHBvbHlnb24gY2xhc3M9InN0MCIgcG9pbnRzPSIyNC40LDE0LjMgMzYuNSwzNCA0OC43LDUzLjcgMjQuNCw1My43IDAsNTMuNyAxMi4yLDM0IAkJIi8+CgkJPHBvbHlnb24gY2xhc3M9InN0MSIgcG9pbnRzPSI0Mi45LDAgNTUuMSwyNi45IDY3LjMsNTMuNyA0Mi45LDUzLjcgMTguNSw1My43IDMwLjcsMjYuOSAJCSIvPgoJCTxwb2x5Z29uIGNsYXNzPSJzdDIiIHBvaW50cz0iMzMuNiw3LjcgNDUuOCwzMC43IDU4LDUzLjcgMzMuNiw1My43IDkuMyw1My43IDIxLjUsMzAuNyAJCSIvPgoJPC9nPgoJPGc+CgkJPHJlY3QgeD0iNzMuMSIgeT0iNy43IiB3aWR0aD0iMS40IiBoZWlnaHQ9IjE3LjEiLz4KCQk8cGF0aCBkPSJNODgsMTYuOGMyLjYtMC40LDQuMS0yLDQuMS00LjVjMC0yLjgtMi00LjYtNS4zLTQuNmgtNy42djE3LjFoMS40di03LjloNS43bDUuNSw3LjhsMCwwLjFoMS43TDg4LDE2Ljh6IE04MC42LDloNi4xCgkJCWMyLjUsMCwzLjksMS4yLDMuOSwzLjNjMCwyLjEtMS40LDMuMy0zLjksMy4zaC02LjFWOXoiLz4KCQk8cGF0aCBkPSJNMTAzLjksNy40Yy00LjksMC04LjUsMy44LTguNSw4LjhjMCw1LDMuNyw4LjgsOC41LDguOGM0LjgsMCw4LjUtMy44LDguNS04LjhDMTEyLjQsMTEuMiwxMDguOCw3LjQsMTAzLjksNy40egoJCQkgTTEwMy45LDIzLjdjLTQsMC03LjEtMy4yLTcuMS03LjVjMC00LjIsMy03LjQsNy4xLTcuNGM0LDAsNywzLjIsNyw3LjRDMTExLDIwLjUsMTA4LDIzLjcsMTAzLjksMjMuN3oiLz4KCQk8cG9seWdvbiBwb2ludHM9IjEyOC43LDIyLjIgMTE3LjUsNy43IDExNy41LDcuNyAxMTYuMyw3LjcgMTE2LjMsMjQuOCAxMTcuNywyNC44IDExNy43LDEwLjIgMTI4LjksMjQuNyAxMjguOSwyNC44IDEzMC4xLDI0LjggCgkJCTEzMC4xLDcuNyAxMjguNyw3LjcgCQkiLz4KCQk8cG9seWdvbiBwb2ludHM9IjgwLjcsNDUgNzQuMywzNi42IDc0LjMsMzYuNiA3Mi45LDM2LjYgNzIuOSw1My42IDc0LjMsNTMuNiA3NC4zLDM4LjkgODAuMiw0Ni42IDgwLjMsNDYuNiA4MS4xLDQ2LjYgODcsMzguOSAKCQkJODcsNTMuNiA4OC41LDUzLjYgODguNSwzNi42IDg3LjEsMzYuNiAJCSIvPgoJCTxwYXRoIGQ9Ik0xMDAuOCwzNi4zYy00LjksMC04LjUsMy44LTguNSw4LjhjMCw1LDMuNyw4LjgsOC41LDguOGM0LjgsMCw4LjUtMy44LDguNS04LjhDMTA5LjMsNDAuMSwxMDUuNywzNi4zLDEwMC44LDM2LjN6CgkJCSBNMTAwLjgsNTIuNmMtNCwwLTcuMS0zLjItNy4xLTcuNWMwLTQuMiwzLTcuNCw3LjEtNy40YzQsMCw3LDMuMiw3LDcuNEMxMDcuOCw0OS40LDEwNC44LDUyLjYsMTAwLjgsNTIuNnoiLz4KCQk8cGF0aCBkPSJNMTI1LjIsNDYuM2MwLDMuOS0yLDYuMi01LjQsNi4yYy0zLjQsMC01LjQtMi4zLTUuNC02LjJ2LTkuOGgtMS40djkuOGMwLDQuNywyLjYsNy42LDYuOSw3LjZjNC4yLDAsNi45LTIuOSw2LjktNy42di05LjgKCQkJaC0xLjRWNDYuM3oiLz4KCQk8cG9seWdvbiBwb2ludHM9IjE0My4zLDUxLjEgMTMyLjEsMzYuNiAxMzIuMSwzNi42IDEzMC45LDM2LjYgMTMwLjksNTMuNiAxMzIuMyw1My42IDEzMi4zLDM5LjEgMTQzLjUsNTMuNiAxNDMuNSw1My42IAoJCQkxNDQuNyw1My42IDE0NC43LDM2LjYgMTQzLjMsMzYuNiAJCSIvPgoJCTxwb2x5Z29uIHBvaW50cz0iMTYxLjEsMzYuNiAxNDcuNiwzNi42IDE0Ny42LDM3LjkgMTUzLjcsMzcuOSAxNTMuNyw1My42IDE1NS4xLDUzLjYgMTU1LjEsMzcuOSAxNjEuMSwzNy45IAkJIi8+CgkJPHBhdGggZD0iTTE2OC44LDM2LjVoLTEuM2wtNy43LDE3bC0wLjEsMC4yaDEuNWwyLjItNC45aDkuM2wyLjIsNC45aDEuNUwxNjguOCwzNi41TDE2OC44LDM2LjV6IE0xNzIuMiw0Ny40aC04LjJsNC4xLTkKCQkJTDE3Mi4yLDQ3LjR6Ii8+CgkJPHJlY3QgeD0iMTc5LjQiIHk9IjM2LjYiIHdpZHRoPSIxLjQiIGhlaWdodD0iMTcuMSIvPgoJCTxwb2x5Z29uIHBvaW50cz0iMTk3LjksNTEuMSAxODYuOCwzNi42IDE4Ni44LDM2LjYgMTg1LjUsMzYuNiAxODUuNSw1My42IDE4Nyw1My42IDE4NywzOS4xIDE5OC4xLDUzLjYgMTk4LjIsNTMuNiAxOTkuNCw1My42IAoJCQkxOTkuNCwzNi42IDE5Ny45LDM2LjYgCQkiLz4KCQk8cGF0aCBkPSJNMjA1LjIsMzUuNWMtMS43LDAtMy4yLDEuNC0zLjIsMy4yczEuNCwzLjIsMy4yLDMuMmMxLjgsMCwzLjItMS40LDMuMi0zLjJDMjA4LjQsMzcsMjA3LDM1LjUsMjA1LjIsMzUuNXogTTIwNS4yLDQxLjQKCQkJYy0xLjUsMC0yLjctMS4yLTIuNy0yLjdjMC0xLjUsMS4yLTIuNywyLjctMi43YzEuNSwwLDIuNywxLjIsMi43LDIuN0MyMDcuOSw0MC4yLDIwNi43LDQxLjQsMjA1LjIsNDEuNHoiLz4KCQk8cGF0aCBkPSJNMjA2LjYsMzhjMC0wLjYtMC40LTEtMS4xLTFIMjA0djMuNGgwLjZWMzloMC44bDEsMS40aDAuN2wtMS4xLTEuNUMyMDYuNCwzOC43LDIwNi42LDM4LjQsMjA2LjYsMzh6IE0yMDQuNiwzNy41aDAuOQoJCQljMC4yLDAsMC41LDAuMSwwLjUsMC40YzAsMC4zLTAuMiwwLjQtMC41LDAuNGgtMC45VjM3LjV6Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" alt="Iron Mountain" height="22" style="filter:brightness(0) invert(1)" class="logo-im">
+  </div>
+  <div class="footer-text"><b>Agillos E-Commerce Private Limited</b> — Aerchain Technical Architecture & Security Overview</div>
+  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--fg3);margin-top:6px;letter-spacing:.05em">Confidential — Prepared for Iron Mountain InfoSec Review / March 2026</div>
+</div>
+</div>
+
+<script>
+// Theme toggle
+function setTheme(t){
+  if(t==='light'){document.body.classList.add('light');document.getElementById('lightBtn').classList.add('active');document.getElementById('darkBtn').classList.remove('active');
+    document.querySelectorAll('.logo-im').forEach(i=>i.style.filter='');
+  }else{document.body.classList.remove('light');document.getElementById('darkBtn').classList.add('active');document.getElementById('lightBtn').classList.remove('active');
+    document.querySelectorAll('.logo-im').forEach(i=>i.style.filter='brightness(0) invert(1)');
+  }
+}
+// Section navigation
+const sections=document.querySelectorAll('.section[id]');
+const navLinks=document.querySelectorAll('.nav-link');
+let curIdx=0;
+const dotsC=document.getElementById('arrowDots');
+sections.forEach((_,i)=>{const d=document.createElement('div');d.className='arrow-dot'+(i===0?' active':'');d.onclick=()=>sections[i].scrollIntoView({behavior:'smooth'});dotsC.appendChild(d);});
+document.getElementById('prevBtn').onclick=()=>{if(curIdx>0)sections[--curIdx].scrollIntoView({behavior:'smooth'})};
+document.getElementById('nextBtn').onclick=()=>{if(curIdx<sections.length-1)sections[++curIdx].scrollIntoView({behavior:'smooth'})};
+const obs=new IntersectionObserver(entries=>{entries.forEach(en=>{if(en.isIntersecting){const id=en.target.id;const idx=Array.from(sections).findIndex(s=>s.id===id);if(idx!==-1)curIdx=idx;navLinks.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+id));document.querySelectorAll('.arrow-dot').forEach((d,i)=>d.classList.toggle('active',i===curIdx))}});},{threshold:0.3});
+sections.forEach(s=>obs.observe(s));
+// Architecture flow lines
+function drawFlows(){
+  const svg=document.getElementById('flowSvg');const grid=document.getElementById('archGrid');if(!svg||!grid)return;
+  const rect=grid.getBoundingClientRect();svg.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);svg.style.width=rect.width+'px';svg.style.height=rect.height+'px';
+  const defs=svg.querySelector('defs');svg.innerHTML=defs.outerHTML;
+  const hub=document.getElementById('hubOrb');const hRect=hub.getBoundingClientRect();const hCx=hRect.left+hRect.width/2-rect.left;const hCy=hRect.top+hRect.height/2-rect.top;const skyBase=hRect.top-rect.top+15;const hLx=hCx-52;const hRx=hCx+52;
+  function cardRight(id){const el=document.getElementById(id);if(!el)return null;const r=el.getBoundingClientRect();return{x:r.right-rect.left,y:r.top+r.height/2-rect.top}}
+  function cardLeft(id){const el=document.getElementById(id);if(!el)return null;const r=el.getBoundingClientRect();return{x:r.left-rect.left,y:r.top+r.height/2-rect.top}}
+  function addLine(d,stroke,mk){
+    const gl=document.createElementNS('http://www.w3.org/2000/svg','path');gl.setAttribute('d',d);gl.setAttribute('class','fg');gl.style.stroke='hsl('+stroke+')';svg.appendChild(gl);
+    const fl=document.createElementNS('http://www.w3.org/2000/svg','path');fl.setAttribute('d',d);fl.setAttribute('class','fl');fl.style.stroke='hsl('+stroke+')';fl.style.opacity='.3';if(mk)fl.setAttribute('marker-end','url(#'+mk+')');svg.appendChild(fl);
+  }
+  [{'id':'snow','stroke':'217 85% 58%','mk':'ab','skyOff':0,'hubOff':-18},{'id':'oracle','stroke':'217 85% 58%','mk':'ab','skyOff':6,'hubOff':-6},{'id':'sso','stroke':'262 75% 58%','mk':'apr','skyOff':12,'hubOff':6},{'id':'supp','stroke':'217 85% 58%','mk':'ab','skyOff':18,'hubOff':18}].forEach(c=>{
+    const p=cardRight(c.id);if(!p)return;const arcY=skyBase+c.skyOff;const entryY=hCy+c.hubOff;const exitX=p.x+30;const apexX=(p.x+hCx)/2;const preHubX=hLx-25;
+    addLine('M'+p.x+' '+p.y+' C'+exitX+' '+p.y+' '+(p.x+80)+' '+arcY+' '+apexX+' '+arcY+' C'+(apexX+40)+' '+arcY+' '+preHubX+' '+entryY+' '+hLx+' '+entryY,c.stroke,c.mk);
+  });
+  [{'id':'oOracle','stroke':'152 65% 42%','mk':'ag','skyOff':0,'hubOff':-12},{'id':'oReport','stroke':'217 85% 58%','mk':'ab','skyOff':8,'hubOff':4},{'id':'oAudit','stroke':'217 85% 58%','mk':'ab','skyOff':16,'hubOff':14}].forEach(c=>{
+    const p=cardLeft(c.id);if(!p)return;const arcY=skyBase+c.skyOff;const exitY=hCy+c.hubOff;const apexX=(hCx+p.x)/2;const postHubX=hRx+25;const entryX=p.x-20;
+    addLine('M'+hRx+' '+exitY+' C'+postHubX+' '+exitY+' '+(apexX-40)+' '+arcY+' '+apexX+' '+arcY+' C'+(apexX+40)+' '+arcY+' '+entryX+' '+p.y+' '+p.x+' '+p.y,c.stroke,c.mk);
+  });
+}
+window.addEventListener('load',()=>setTimeout(drawFlows,150));
+window.addEventListener('resize',drawFlows);
+</script>
+</body>
+</html>
