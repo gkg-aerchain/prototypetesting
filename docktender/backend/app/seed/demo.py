@@ -92,6 +92,9 @@ BID_SPECS = [
                    {"label": "Cargo tank cleaning", "median_usd": 55_000},
                    {"label": "Sea-chest anodes", "median_usd": 22_000},
                    {"label": "Misc owner works", "median_usd": 25_000}],
+         standalone_exclusions=[{"label": "Grit disposal"}, {"label": "Class attendance fees"},
+                                {"label": "Staging"}, {"label": "Cargo tank cleaning"},
+                                {"label": "Sea-chest anodes"}, {"label": "Misc owner works"}],
          below_norm=[{"label": "Steel renewal 104 mh/t below norm on TBC quantity",
                       "extra_usd": 130_000}],
          note="Cheapest bid, highest exposure. Grit disposal and staging excluded; "
@@ -290,18 +293,20 @@ def _build_bid_lines(db: Session, bid: Bid, bspec: dict, section_items: dict[int
         amount = (dubai, semb, bes)[col - 2]
         items = section_items.get(section_no, [])
         target_item = items[0] if items else None
+        # The section flag only applies to the Besiktas column (col 4).
+        flag = bes_flag if col == 4 else None
         if amount is None:
             # unpriced (Sembcorp boiler)
             db.add(BidLine(
                 bid_id=bid.id, spec_item_id=target_item.id if target_item else None,
-                raw_text=f"{sec_name} — to be advised", state="unpriced",
-                assumptions="Priced on inspection",
+                raw_text=sec_name, uom="lot", state="unpriced",
+                assumptions=flag or "Priced on inspection",
             ))
             continue
-        state = "priced"
         db.add(BidLine(
             bid_id=bid.id, spec_item_id=target_item.id if target_item else None,
-            raw_text=sec_name, uom="lot", amount=float(amount), state=state,
+            raw_text=sec_name, uom="lot", amount=float(amount), state="priced",
+            assumptions=flag or "",
         ))
         priced_total += amount
     # remainder line to reach the bid's normalized total (other sections §7-§10)
@@ -311,8 +316,10 @@ def _build_bid_lines(db: Session, bid: Bid, bspec: dict, section_items: dict[int
             bid_id=bid.id, spec_item_id=None, raw_text="Sections §7–§10 (machinery, piping, class)",
             uom="lot", amount=remainder, state="priced",
         ))
-    # explicit exclusion lines
-    for exc in bspec["excluded"]:
+    # Standalone exclusion lines (sub-items excluded from scope, not whole sections).
+    # An item that is an unpriced *section* (e.g. Sembcorp's boiler) is represented by
+    # its unpriced section line above, not duplicated here.
+    for exc in bspec.get("standalone_exclusions", []):
         db.add(BidLine(
             bid_id=bid.id, spec_item_id=None, raw_text=exc["label"], state="excluded",
             assumptions="Excluded from bid scope",

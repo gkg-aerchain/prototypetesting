@@ -100,6 +100,56 @@ export interface WorkItem {
   factors: Record<string, unknown>; typical: boolean;
 }
 
+export interface TenderSummary {
+  id: string; ref: string; status: string; vessel: string; vessel_type: string;
+  spec_id: string; spec_title: string; deadline: string | null;
+  offhire_usd_day: number; bids: number; invited: number;
+}
+
+export interface Invitation {
+  yard_id: string; yard: string; region: string; status: string; has_bid: boolean;
+}
+export interface Clarification {
+  id: string; question: string; answer: string; addendum_no: number | null; published: boolean;
+}
+export interface TenderDetail extends TenderSummary {
+  invitations: Invitation[]; clarifications: Clarification[]; sealed_bids_hidden: boolean;
+}
+
+export interface TecFlag { kind: string; text: string; }
+export interface TecCard {
+  bid_id: string; rank: number; recommended: boolean; yard: string; dock: string;
+  slot: string; tec_usd: number; sticker_usd: number; dock_days: number;
+  composition: { key: string; usd: number; color: string }[];
+  deviation_nm: number; flags: TecFlag[]; note: string; lowest_sticker: boolean;
+}
+export interface MatrixCell {
+  bid_id: string; amount: number | null; state: string; flag: string | null; best: boolean;
+}
+export interface MatrixRow { section: number; name: string; cells: MatrixCell[]; }
+export interface Leveling {
+  tender_ref: string; spec_line_count: number; fx_date: string | null; offhire_usd_day: number;
+  legend: { key: string; label: string; color: string }[];
+  cards: TecCard[];
+  matrix: { columns: { bid_id: string; yard: string }[]; rows: MatrixRow[] };
+  exposure: { bid_id: string; yard: string; total_usd: number; items: { label: string; kind: string; exposure_usd: number }[] }[];
+}
+
+export interface SpecSummary {
+  id: string; title: string; status: string; version: number; vessel: string;
+  vessel_type: string; items: number; sections_covered: number; sections_total: number;
+  pct_complete: number; frozen_at: string | null;
+}
+export interface SpecItemDto {
+  id: string; line_no: number; title: string; qty: number; uom: string; qty_tbc: boolean;
+  origin: string; notes: string; code: string | null; section: number | null;
+  section_name: string | null; norm_value: number | null; norm_unit: string | null;
+  norm_basis: string | null;
+}
+export interface SpecDetail extends SpecSummary {
+  item_list: SpecItemDto[];
+}
+
 export interface DockDto {
   id: string; name: string; kind: string; length_m: number; beam_m: number;
   depth_over_blocks_m: number; max_dwt: number; cranes: number[];

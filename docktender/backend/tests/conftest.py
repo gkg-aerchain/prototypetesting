@@ -21,11 +21,25 @@ from app.main import app  # noqa: E402
 
 @pytest.fixture(scope="module")
 def client():
-    db_path = os.environ["DATABASE_URL"].replace("sqlite:///", "")
+    # Rebind the global engine to a fresh dt_test.db for this module. Other modules
+    # (e.g. test_programme) rebind the engine to their own DB, so we reset it here
+    # and dispose any pooled connections to the previous file before removing it.
+    import sqlalchemy
+
+    from app import db as dbmod
+
+    url = os.environ["DATABASE_URL"]
+    settings.database_url = url
+    db_path = url.replace("sqlite:///", "")
+    dbmod.engine.dispose()
     if os.path.exists(db_path):
         os.remove(db_path)
+    dbmod.engine = sqlalchemy.create_engine(
+        url, connect_args={"check_same_thread": False}, future=True)
+    dbmod.SessionLocal.configure(bind=dbmod.engine)
     with TestClient(app) as c:
         yield c
+    dbmod.engine.dispose()
 
 
 @pytest.fixture(scope="module")
