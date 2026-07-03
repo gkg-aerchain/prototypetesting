@@ -11,20 +11,20 @@ execution plan); the **Status** column reflects what is live as phases land.
 | `*POST` | `/api/auth/login` | credentials → token | ✅ Phase 0 |
 | `GET` | `/api/auth/me` | current user profile | ✅ Phase 0 |
 | `PATCH` | `/api/me` | update accent / theme / name | ✅ Phase 0 |
-| `GET` | `/api/programme` | command-center aggregate | Phase 1a |
-| `GET` | `/api/fleet` · `POST/GET/PATCH/DELETE /api/vessels[/{id}]` | fleet CRUD | Phase 1a |
-| `GET` | `/api/work-items?section=&q=` | canonical library search | Phase 1a |
-| `GET` | `/api/yards?vessel_id=` | directory + physical-fit filter | Phase 1a |
-| `POST/GET` | `/api/specs[/{id}]` · items · `/freeze` | spec builder | Phase 1c |
-| `POST/GET` | `/api/tenders[/{id}]` · `/invite` · `/clarifications` · `/addenda` | tender room | Phase 1c |
-| `POST` | `/api/tenders/{id}/bids` · `/bids/ingest` | portal + AI bid intake | Phase 1c |
-| `GET/PATCH` | `/api/bids/{id}/review` · `/lines/{lid}` | bid review | Phase 1c |
-| `GET` | `/api/tenders/{id}/leveling` · `POST /evaluate` · `GET /exposure` | leveling + TEC | Phase 1c |
-| `POST` | `/api/tenders/{id}/award` · `GET /api/awards/{id}/memo.pdf` | award | Phase 1c |
-| `GET` | `/api/executions[/{award_id}]` · `POST /vos` · `PATCH /api/vos/{id}` | execution + VO log | Phase 1d |
-| `GET/POST` | `/api/settlements[/{award_id}/close]` | final accounts | Phase 1d |
-| `GET/PATCH` | `/api/agents/events` | review queue | Phase 1a/1c |
-| `POST` | `/api/ai/chat` | assistant (503 without key) | Phase 1d |
+| `GET` | `/api/programme` | command-center aggregate | ✅ Phase 1a |
+| `GET` | `/api/fleet` · `POST/GET/PATCH/DELETE /api/vessels[/{id}]` | fleet CRUD | ✅ Phase 1a |
+| `GET` | `/api/work-items?section=&q=` · `/sections` | canonical library search | ✅ Phase 1a |
+| `GET` | `/api/yards?region=&vessel_id=&fits_only=` · `/{id}` | directory + physical-fit filter | ✅ Phase 1a |
+| `POST/GET` | `/api/specs[/{id}]` · `/items` · `/copy-forward` · `/freeze` | spec builder | ✅ Phase 1c |
+| `POST/GET` | `/api/tenders[/{id}]` · `/invite` · `/issue` · `/clarifications` | tender room | ✅ Phase 1c |
+| `POST` | `/api/tenders/{id}/bids` · `/bids/ingest` | portal + AI bid intake | ✅ Phase 1c |
+| `GET/PATCH` | `/api/bids/{id}/review` · `/lines/{lid}` · `/sanity-check` | bid review | ✅ Phase 1c |
+| `GET/POST` | `/api/tenders/{id}/leveling` · `/evaluate` · `/exposure` | leveling + TEC | ✅ Phase 1c |
+| `GET/POST` | `/api/tenders/{id}/award[/preview]` · `GET /api/awards/{id}/memo.pdf` | award | ✅ Phase 1c |
+| `GET` | `/api/executions[/{award_id}]` · `POST /vos` · `PATCH /api/vos/{id}` | execution + VO log | ✅ Phase 1d |
+| `GET/POST` | `/api/settlements[/{award_id}/close]` | final accounts + scorecards | ✅ Phase 1d |
+| `GET/PATCH` | `/api/agents/events` · `/{id}` | review queue | ✅ Phase 1d |
+| `POST` | `/api/ai/chat` | assistant (503 without key) | ✅ Phase 1d |
 
 ## Live endpoint detail (Phase 0)
 

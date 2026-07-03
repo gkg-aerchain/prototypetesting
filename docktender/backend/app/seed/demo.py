@@ -483,7 +483,7 @@ def _build_yard_scores(db: Session) -> None:
         ("Colombo Dockyard", "TND-2026-006", 9.4, 1, 4, 4),
         ("ASRY", "TND-2025-041", 6.1, 0, 4, 5),
         ("Drydocks World", "TND-2025-022", 5.2, 0, 5, 4),
-        ("Sembcorp", "TND-2025-019", 4.8, 1, 5, 5),
+        ("Seatrium Admiralty", "TND-2025-019", 4.8, 1, 5, 5),
         ("Besiktas", "TND-2024-033", 14.7, 3, 3, 3),
     ]
     for (yard_key, ref, growth, overrun, quality, hse) in data:

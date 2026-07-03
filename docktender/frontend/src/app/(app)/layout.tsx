@@ -1,6 +1,7 @@
 "use client";
 import { UserProvider } from "@/lib/user";
 import { Rail } from "@/components/Rail";
+import { Assistant } from "@/components/Assistant";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Rail />
         <main className="stage">{children}</main>
       </div>
+      <Assistant />
     </UserProvider>
   );
 }
