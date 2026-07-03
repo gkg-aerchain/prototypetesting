@@ -1,0 +1,91 @@
+/* DockTender — canonical design tokens (v6 "Signal & Waterline", approved Jul 2026)
+   Components must reference tokens only — never raw hexes.
+   Theme:  <html data-theme="light|dark">  (default: prefers-color-scheme)
+   Accent: <html data-accent="cerise|marigold|verdigris|azure|violet"> (default cerise;
+           per-user setting, persisted server-side + localStorage)
+   Categorical s1–s4 are CVD-machine-validated per theme; if changed, re-validate. */
+
+:root {
+  --chrome: #0B1826; --chrome-2: #122236; --chrome-ink: #E9EEF3; --chrome-dim: #8DA0B3;
+  --paper: #F4F6F7; --card: #FFFFFF; --well: #EBEEF0;
+  --ink: #14202C; --ink-2: #4E5D6B; --ink-3: #8B99A6;
+  --hairline: #E4E8EB; --hairline-2: #D3DAE0;
+  --signal: #D62A6E; --signal-deep: #AD1257; --signal-tint: #FAE3EE;
+  --good: #2C7A57; --good-tint: #E3F0E9;
+  --warn: #A96F00; --warn-tint: #F6EDD5;
+  --crit: #BF3B36; --crit-tint: #F8E7E6;
+  --steel: #64809A; --sea: #DCE6EC;
+  --s1: #0084A0; --s2: #4A5FA5; --s3: #B07A2A; --s4: #9C4C93;
+  --note: #8A6A00;
+  --shadow: 0 1px 2px rgba(11,24,38,.06), 0 10px 28px -14px rgba(11,24,38,.18);
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chrome: #0A141F; --chrome-2: #0F1D2D; --chrome-ink: #E9EEF3; --chrome-dim: #7E93A7;
+    --paper: #0E161E; --card: #131D27; --well: #1A2631;
+    --ink: #E7ECF0; --ink-2: #A6B4C0; --ink-3: #67778A;
+    --hairline: #22303C; --hairline-2: #2E3E4C;
+    --signal: #EE6FA4; --signal-deep: #D62A6E; --signal-tint: #3A1226;
+    --good: #58B389; --good-tint: #10281D;
+    --warn: #D3A140; --warn-tint: #2C220D;
+    --crit: #E0736D; --crit-tint: #331513;
+    --steel: #587795; --sea: #142433;
+    --s1: #31A0BC; --s2: #6D83DC; --s3: #C1802A; --s4: #B5679F;
+    --note: #CBA83E;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="light"] {
+  --chrome: #0B1826; --chrome-2: #122236; --chrome-ink: #E9EEF3; --chrome-dim: #8DA0B3;
+  --paper: #F4F6F7; --card: #FFFFFF; --well: #EBEEF0;
+  --ink: #14202C; --ink-2: #4E5D6B; --ink-3: #8B99A6;
+  --hairline: #E4E8EB; --hairline-2: #D3DAE0;
+  --signal: #D62A6E; --signal-deep: #AD1257; --signal-tint: #FAE3EE;
+  --good: #2C7A57; --good-tint: #E3F0E9;
+  --warn: #A96F00; --warn-tint: #F6EDD5;
+  --crit: #BF3B36; --crit-tint: #F8E7E6;
+  --steel: #64809A; --sea: #DCE6EC;
+  --s1: #0084A0; --s2: #4A5FA5; --s3: #B07A2A; --s4: #9C4C93;
+  --note: #8A6A00;
+  --shadow: 0 1px 2px rgba(11,24,38,.06), 0 10px 28px -14px rgba(11,24,38,.18);
+}
+:root[data-theme="dark"] {
+  --chrome: #0A141F; --chrome-2: #0F1D2D; --chrome-ink: #E9EEF3; --chrome-dim: #7E93A7;
+  --paper: #0E161E; --card: #131D27; --well: #1A2631;
+  --ink: #E7ECF0; --ink-2: #A6B4C0; --ink-3: #67778A;
+  --hairline: #22303C; --hairline-2: #2E3E4C;
+  --signal: #EE6FA4; --signal-deep: #D62A6E; --signal-tint: #3A1226;
+  --good: #58B389; --good-tint: #10281D;
+  --warn: #D3A140; --warn-tint: #2C220D;
+  --crit: #E0736D; --crit-tint: #331513;
+  --steel: #587795; --sea: #142433;
+  --s1: #31A0BC; --s2: #6D83DC; --s3: #C1802A; --s4: #B5679F;
+  --note: #CBA83E;
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.55);
+}
+
+/* ---- signal accent options (per-user setting) ---- */
+:root[data-accent="cerise"]    { --signal:#D62A6E; --signal-deep:#AD1257; --signal-tint:#FAE3EE; }
+:root[data-accent="marigold"]  { --signal:#B8860B; --signal-deep:#7E5C00; --signal-tint:#F7ECD2; --warn:#8F4E1D; --warn-tint:#F5E7DA; }
+:root[data-accent="verdigris"] { --signal:#0F8C7D; --signal-deep:#0A6A5E; --signal-tint:#DFF1EE; }
+:root[data-accent="azure"]     { --signal:#2E6BE6; --signal-deep:#1E4FD0; --signal-tint:#E4EBFC; }
+:root[data-accent="violet"]    { --signal:#6D4AE7; --signal-deep:#5433C4; --signal-tint:#EAE4FB; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent="cerise"]    { --signal:#EE6FA4; --signal-deep:#D62A6E; --signal-tint:#3A1226; }
+  :root[data-accent="marigold"]  { --signal:#D9A62E; --signal-deep:#7E5C00; --signal-tint:#33270A; --warn:#C88A4A; --warn-tint:#2F1D0E; }
+  :root[data-accent="verdigris"] { --signal:#3DBFAE; --signal-deep:#0A6A5E; --signal-tint:#0E2A26; }
+  :root[data-accent="azure"]     { --signal:#7AA5FF; --signal-deep:#1E4FD0; --signal-tint:#182448; }
+  :root[data-accent="violet"]    { --signal:#9B85F2; --signal-deep:#5433C4; --signal-tint:#221743; }
+}
+:root[data-theme="light"][data-accent="cerise"]    { --signal:#D62A6E; --signal-deep:#AD1257; --signal-tint:#FAE3EE; }
+:root[data-theme="light"][data-accent="marigold"]  { --signal:#B8860B; --signal-deep:#7E5C00; --signal-tint:#F7ECD2; --warn:#8F4E1D; --warn-tint:#F5E7DA; }
+:root[data-theme="light"][data-accent="verdigris"] { --signal:#0F8C7D; --signal-deep:#0A6A5E; --signal-tint:#DFF1EE; }
+:root[data-theme="light"][data-accent="azure"]     { --signal:#2E6BE6; --signal-deep:#1E4FD0; --signal-tint:#E4EBFC; }
+:root[data-theme="light"][data-accent="violet"]    { --signal:#6D4AE7; --signal-deep:#5433C4; --signal-tint:#EAE4FB; }
+:root[data-theme="dark"][data-accent="cerise"]     { --signal:#EE6FA4; --signal-deep:#D62A6E; --signal-tint:#3A1226; }
+:root[data-theme="dark"][data-accent="marigold"]   { --signal:#D9A62E; --signal-deep:#7E5C00; --signal-tint:#33270A; --warn:#C88A4A; --warn-tint:#2F1D0E; }
+:root[data-theme="dark"][data-accent="verdigris"]  { --signal:#3DBFAE; --signal-deep:#0A6A5E; --signal-tint:#0E2A26; }
+:root[data-theme="dark"][data-accent="azure"]      { --signal:#7AA5FF; --signal-deep:#1E4FD0; --signal-tint:#182448; }
+:root[data-theme="dark"][data-accent="violet"]     { --signal:#9B85F2; --signal-deep:#5433C4; --signal-tint:#221743; }
