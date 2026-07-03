@@ -1,0 +1,49 @@
+name: DockTender CI
+
+on:
+  push:
+    paths:
+      - "docktender/**"
+      - ".github/workflows/docktender-ci.yml"
+  pull_request:
+    paths:
+      - "docktender/**"
+      - ".github/workflows/docktender-ci.yml"
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docktender/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Regenerate + verify seed data
+        run: |
+          python -m app.seed.build_work_items
+          python -m app.seed.build_yards
+          test -z "$(git status --porcelain app/seed/*.json)" || (echo "Seed JSON out of date — rerun builders" && git diff app/seed/*.json && exit 1)
+      - name: Run tests
+        run: python -m pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install, typecheck, build (skips until frontend scaffolded)
+        run: |
+          if [ ! -f docktender/frontend/package.json ]; then
+            echo "No frontend yet — skipping."; exit 0
+          fi
+          cd docktender/frontend
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npx tsc --noEmit
+          npm run build

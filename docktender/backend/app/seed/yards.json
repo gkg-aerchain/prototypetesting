@@ -1,0 +1,1216 @@
+[
+  {
+    "name": "Seatrium Admiralty Yard",
+    "country": "Singapore",
+    "region": "SEA",
+    "labor_rate_band": "high",
+    "lat": 1.45,
+    "lon": 103.81,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 1",
+        "kind": "graving",
+        "length_m": 384,
+        "beam_m": 64,
+        "depth_over_blocks_m": 13.5,
+        "max_dwt": 400000,
+        "cranes_json": [
+          80,
+          50
+        ]
+      },
+      {
+        "name": "Dock 2",
+        "kind": "graving",
+        "length_m": 350,
+        "beam_m": 60,
+        "depth_over_blocks_m": 13.0,
+        "max_dwt": 300000,
+        "cranes_json": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Seatrium Tuas Boulevard",
+    "country": "Singapore",
+    "region": "SEA",
+    "labor_rate_band": "high",
+    "lat": 1.29,
+    "lon": 103.63,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "VLCC Dock",
+        "kind": "graving",
+        "length_m": 405,
+        "beam_m": 66,
+        "depth_over_blocks_m": 14.0,
+        "max_dwt": 400000,
+        "cranes_json": [
+          120,
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "PaxOcean Graha (Batam)",
+    "country": "Indonesia",
+    "region": "SEA",
+    "labor_rate_band": "mid",
+    "lat": 1.13,
+    "lon": 104.02,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Graving Dock",
+        "kind": "graving",
+        "length_m": 285,
+        "beam_m": 50,
+        "depth_over_blocks_m": 9.5,
+        "max_dwt": 150000,
+        "cranes_json": [
+          50
+        ]
+      },
+      {
+        "name": "Floating Dock A",
+        "kind": "floating",
+        "length_m": 245,
+        "beam_m": 42,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 90000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ASL Marine (Batam)",
+    "country": "Indonesia",
+    "region": "SEA",
+    "labor_rate_band": "mid",
+    "lat": 1.05,
+    "lon": 103.95,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock 1",
+        "kind": "floating",
+        "length_m": 230,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 80000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Sembcorp Marine Karimun",
+    "country": "Indonesia",
+    "region": "SEA",
+    "labor_rate_band": "mid",
+    "lat": 1.03,
+    "lon": 103.4,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock",
+        "kind": "graving",
+        "length_m": 300,
+        "beam_m": 52,
+        "depth_over_blocks_m": 10.0,
+        "max_dwt": 180000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Yiu Lian Dockyards (Shekou)",
+    "country": "China",
+    "region": "SEA",
+    "labor_rate_band": "mid",
+    "lat": 22.47,
+    "lon": 113.9,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.1 Dock",
+        "kind": "graving",
+        "length_m": 365,
+        "beam_m": 68,
+        "depth_over_blocks_m": 12.5,
+        "max_dwt": 300000,
+        "cranes_json": [
+          60
+        ]
+      },
+      {
+        "name": "No.2 Dock",
+        "kind": "graving",
+        "length_m": 300,
+        "beam_m": 55,
+        "depth_over_blocks_m": 11.0,
+        "max_dwt": 200000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Drydocks World \u2014 Dubai",
+    "country": "UAE",
+    "region": "MEast",
+    "labor_rate_band": "mid",
+    "lat": 25.2,
+    "lon": 55.27,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 1",
+        "kind": "graving",
+        "length_m": 415,
+        "beam_m": 80,
+        "depth_over_blocks_m": 14.0,
+        "max_dwt": 600000,
+        "cranes_json": [
+          120,
+          60
+        ]
+      },
+      {
+        "name": "Dock 2",
+        "kind": "graving",
+        "length_m": 366,
+        "beam_m": 66,
+        "depth_over_blocks_m": 13.0,
+        "max_dwt": 350000,
+        "cranes_json": [
+          80
+        ]
+      },
+      {
+        "name": "Dock 3",
+        "kind": "graving",
+        "length_m": 255,
+        "beam_m": 45,
+        "depth_over_blocks_m": 9.0,
+        "max_dwt": 120000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ASRY \u2014 Arab Shipbuilding & Repair",
+    "country": "Bahrain",
+    "region": "MEast",
+    "labor_rate_band": "mid",
+    "lat": 26.16,
+    "lon": 50.66,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "VLCC Dock",
+        "kind": "graving",
+        "length_m": 375,
+        "beam_m": 70,
+        "depth_over_blocks_m": 13.0,
+        "max_dwt": 500000,
+        "cranes_json": [
+          80
+        ]
+      },
+      {
+        "name": "Floating Dock DD3",
+        "kind": "floating",
+        "length_m": 240,
+        "beam_m": 42,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 90000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "N-KOM (Nakilat-Keppel Qatar)",
+    "country": "Qatar",
+    "region": "MEast",
+    "labor_rate_band": "mid",
+    "lat": 25.9,
+    "lon": 51.55,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Graving Dock 1",
+        "kind": "graving",
+        "length_m": 400,
+        "beam_m": 80,
+        "depth_over_blocks_m": 14.0,
+        "max_dwt": 500000,
+        "cranes_json": [
+          100
+        ]
+      },
+      {
+        "name": "Graving Dock 2",
+        "kind": "graving",
+        "length_m": 360,
+        "beam_m": 66,
+        "depth_over_blocks_m": 12.5,
+        "max_dwt": 300000,
+        "cranes_json": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Oman Drydock Company (Duqm)",
+    "country": "Oman",
+    "region": "MEast",
+    "labor_rate_band": "mid",
+    "lat": 19.66,
+    "lon": 57.7,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 1",
+        "kind": "graving",
+        "length_m": 410,
+        "beam_m": 80,
+        "depth_over_blocks_m": 14.0,
+        "max_dwt": 600000,
+        "cranes_json": [
+          120
+        ]
+      },
+      {
+        "name": "Dock 2",
+        "kind": "graving",
+        "length_m": 410,
+        "beam_m": 95,
+        "depth_over_blocks_m": 14.0,
+        "max_dwt": 600000,
+        "cranes_json": [
+          120
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Albwardy Damen (Sharjah)",
+    "country": "UAE",
+    "region": "MEast",
+    "labor_rate_band": "mid",
+    "lat": 25.35,
+    "lon": 55.39,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock",
+        "kind": "floating",
+        "length_m": 235,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 85000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Colombo Dockyard",
+    "country": "Sri Lanka",
+    "region": "ISC",
+    "labor_rate_band": "low",
+    "lat": 6.95,
+    "lon": 79.84,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 3",
+        "kind": "graving",
+        "length_m": 336,
+        "beam_m": 43,
+        "depth_over_blocks_m": 9.5,
+        "max_dwt": 125000,
+        "cranes_json": [
+          50
+        ]
+      },
+      {
+        "name": "Dock 4",
+        "kind": "graving",
+        "length_m": 223,
+        "beam_m": 30,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 45000,
+        "cranes_json": [
+          30
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Cochin Shipyard",
+    "country": "India",
+    "region": "ISC",
+    "labor_rate_band": "low",
+    "lat": 9.97,
+    "lon": 76.27,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Ship Repair Dock",
+        "kind": "graving",
+        "length_m": 270,
+        "beam_m": 45,
+        "depth_over_blocks_m": 9.0,
+        "max_dwt": 125000,
+        "cranes_json": [
+          50
+        ]
+      },
+      {
+        "name": "ISRF Dock",
+        "kind": "graving",
+        "length_m": 130,
+        "beam_m": 25,
+        "depth_over_blocks_m": 6.0,
+        "max_dwt": 20000,
+        "cranes_json": [
+          20
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Hindustan Shipyard (Visakhapatnam)",
+    "country": "India",
+    "region": "ISC",
+    "labor_rate_band": "low",
+    "lat": 17.69,
+    "lon": 83.28,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock",
+        "kind": "graving",
+        "length_m": 244,
+        "beam_m": 38,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 70000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "L&T Kattupalli",
+    "country": "India",
+    "region": "ISC",
+    "labor_rate_band": "low",
+    "lat": 13.3,
+    "lon": 80.35,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock",
+        "kind": "graving",
+        "length_m": 300,
+        "beam_m": 60,
+        "depth_over_blocks_m": 10.0,
+        "max_dwt": 180000,
+        "cranes_json": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Chattogram Dry Dock",
+    "country": "Bangladesh",
+    "region": "ISC",
+    "labor_rate_band": "low",
+    "lat": 22.24,
+    "lon": 91.72,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock",
+        "kind": "graving",
+        "length_m": 210,
+        "beam_m": 32,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 45000,
+        "cranes_json": [
+          30
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Pakistan Karachi Shipyard",
+    "country": "Pakistan",
+    "region": "ISC",
+    "labor_rate_band": "low",
+    "lat": 24.82,
+    "lon": 66.97,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock",
+        "kind": "graving",
+        "length_m": 216,
+        "beam_m": 33,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 55000,
+        "cranes_json": [
+          30
+        ]
+      }
+    ]
+  },
+  {
+    "name": "COSCO Shipping Zhoushan",
+    "country": "China",
+    "region": "FarEast",
+    "labor_rate_band": "mid",
+    "lat": 30.03,
+    "lon": 122.1,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.1 Dock",
+        "kind": "graving",
+        "length_m": 365,
+        "beam_m": 80,
+        "depth_over_blocks_m": 13.5,
+        "max_dwt": 350000,
+        "cranes_json": [
+          80,
+          60
+        ]
+      },
+      {
+        "name": "No.2 Dock",
+        "kind": "graving",
+        "length_m": 300,
+        "beam_m": 58,
+        "depth_over_blocks_m": 11.5,
+        "max_dwt": 200000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "COSCO Shipping Dalian",
+    "country": "China",
+    "region": "FarEast",
+    "labor_rate_band": "mid",
+    "lat": 38.93,
+    "lon": 121.63,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.1 Dock",
+        "kind": "graving",
+        "length_m": 365,
+        "beam_m": 80,
+        "depth_over_blocks_m": 13.5,
+        "max_dwt": 350000,
+        "cranes_json": [
+          80
+        ]
+      }
+    ]
+  },
+  {
+    "name": "COSCO Shipping Guangdong",
+    "country": "China",
+    "region": "FarEast",
+    "labor_rate_band": "mid",
+    "lat": 22.76,
+    "lon": 113.1,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock A",
+        "kind": "graving",
+        "length_m": 350,
+        "beam_m": 66,
+        "depth_over_blocks_m": 12.5,
+        "max_dwt": 300000,
+        "cranes_json": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Huarun Dadong Dockyard (Shanghai)",
+    "country": "China",
+    "region": "FarEast",
+    "labor_rate_band": "mid",
+    "lat": 31.36,
+    "lon": 121.68,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.1 Dock",
+        "kind": "graving",
+        "length_m": 365,
+        "beam_m": 76,
+        "depth_over_blocks_m": 13.0,
+        "max_dwt": 300000,
+        "cranes_json": [
+          80
+        ]
+      },
+      {
+        "name": "No.2 Dock",
+        "kind": "graving",
+        "length_m": 265,
+        "beam_m": 50,
+        "depth_over_blocks_m": 10.0,
+        "max_dwt": 120000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "China United Dockyard (Weihai)",
+    "country": "China",
+    "region": "FarEast",
+    "labor_rate_band": "mid",
+    "lat": 37.51,
+    "lon": 122.12,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 1",
+        "kind": "graving",
+        "length_m": 300,
+        "beam_m": 58,
+        "depth_over_blocks_m": 11.0,
+        "max_dwt": 200000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Zhoushan IMC-YY",
+    "country": "China",
+    "region": "FarEast",
+    "labor_rate_band": "low",
+    "lat": 29.95,
+    "lon": 122.3,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock",
+        "kind": "floating",
+        "length_m": 255,
+        "beam_m": 45,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 100000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "K Shipbuilding (Jinhae)",
+    "country": "South Korea",
+    "region": "FarEast",
+    "labor_rate_band": "high",
+    "lat": 35.13,
+    "lon": 128.66,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 2",
+        "kind": "graving",
+        "length_m": 320,
+        "beam_m": 60,
+        "depth_over_blocks_m": 11.5,
+        "max_dwt": 250000,
+        "cranes_json": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Besiktas Shipyard (Yalova)",
+    "country": "Turkey",
+    "region": "Med",
+    "labor_rate_band": "mid",
+    "lat": 40.68,
+    "lon": 29.28,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock 1",
+        "kind": "floating",
+        "length_m": 290,
+        "beam_m": 46,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 150000,
+        "cranes_json": [
+          40
+        ]
+      },
+      {
+        "name": "Floating Dock 2",
+        "kind": "floating",
+        "length_m": 245,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 90000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Gemak Group (Tuzla)",
+    "country": "Turkey",
+    "region": "Med",
+    "labor_rate_band": "mid",
+    "lat": 40.83,
+    "lon": 29.3,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock",
+        "kind": "floating",
+        "length_m": 280,
+        "beam_m": 45,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 140000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Desan Shipyard (Tuzla)",
+    "country": "Turkey",
+    "region": "Med",
+    "labor_rate_band": "mid",
+    "lat": 40.84,
+    "lon": 29.31,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock",
+        "kind": "graving",
+        "length_m": 300,
+        "beam_m": 50,
+        "depth_over_blocks_m": 9.5,
+        "max_dwt": 180000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Sedef Shipyard (Tuzla)",
+    "country": "Turkey",
+    "region": "Med",
+    "labor_rate_band": "mid",
+    "lat": 40.83,
+    "lon": 29.29,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock",
+        "kind": "floating",
+        "length_m": 255,
+        "beam_m": 42,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 100000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Palumbo Malta Superyachts & Repair",
+    "country": "Malta",
+    "region": "Med",
+    "labor_rate_band": "mid",
+    "lat": 35.89,
+    "lon": 14.51,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.6 Dock",
+        "kind": "graving",
+        "length_m": 360,
+        "beam_m": 62,
+        "depth_over_blocks_m": 12.0,
+        "max_dwt": 300000,
+        "cranes_json": [
+          60
+        ]
+      },
+      {
+        "name": "No.4 Dock",
+        "kind": "graving",
+        "length_m": 220,
+        "beam_m": 32,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 50000,
+        "cranes_json": [
+          30
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Gibdock (Gibraltar)",
+    "country": "Gibraltar",
+    "region": "Med",
+    "labor_rate_band": "high",
+    "lat": 36.14,
+    "lon": -5.36,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.1 Dock",
+        "kind": "graving",
+        "length_m": 300,
+        "beam_m": 46,
+        "depth_over_blocks_m": 9.0,
+        "max_dwt": 100000,
+        "cranes_json": [
+          50
+        ]
+      },
+      {
+        "name": "No.2 Dock",
+        "kind": "graving",
+        "length_m": 200,
+        "beam_m": 28,
+        "depth_over_blocks_m": 7.5,
+        "max_dwt": 35000,
+        "cranes_json": [
+          30
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Hellenic Shipyards (Skaramangas)",
+    "country": "Greece",
+    "region": "Med",
+    "labor_rate_band": "mid",
+    "lat": 38.0,
+    "lon": 23.6,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.3 Dock",
+        "kind": "graving",
+        "length_m": 290,
+        "beam_m": 45,
+        "depth_over_blocks_m": 9.0,
+        "max_dwt": 100000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Adriatic Croatia Viktor Lenac",
+    "country": "Croatia",
+    "region": "Med",
+    "labor_rate_band": "mid",
+    "lat": 45.32,
+    "lon": 14.45,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock",
+        "kind": "floating",
+        "length_m": 245,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 90000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Remontowa Ship Repair (Gdansk)",
+    "country": "Poland",
+    "region": "NEur",
+    "labor_rate_band": "high",
+    "lat": 54.39,
+    "lon": 18.68,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 5",
+        "kind": "floating",
+        "length_m": 380,
+        "beam_m": 70,
+        "depth_over_blocks_m": 12.0,
+        "max_dwt": 300000,
+        "cranes_json": [
+          60
+        ]
+      },
+      {
+        "name": "Dock 4",
+        "kind": "floating",
+        "length_m": 250,
+        "beam_m": 42,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 100000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Fayard (Odense)",
+    "country": "Denmark",
+    "region": "NEur",
+    "labor_rate_band": "high",
+    "lat": 55.48,
+    "lon": 10.55,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 1",
+        "kind": "graving",
+        "length_m": 415,
+        "beam_m": 90,
+        "depth_over_blocks_m": 14.0,
+        "max_dwt": 500000,
+        "cranes_json": [
+          80
+        ]
+      },
+      {
+        "name": "Dock 2",
+        "kind": "graving",
+        "length_m": 260,
+        "beam_m": 45,
+        "depth_over_blocks_m": 9.0,
+        "max_dwt": 120000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Damen Verolme (Rotterdam)",
+    "country": "Netherlands",
+    "region": "NEur",
+    "labor_rate_band": "high",
+    "lat": 51.89,
+    "lon": 4.25,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 6",
+        "kind": "graving",
+        "length_m": 405,
+        "beam_m": 90,
+        "depth_over_blocks_m": 12.0,
+        "max_dwt": 500000,
+        "cranes_json": [
+          80
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Damen Shiprepair Brest",
+    "country": "France",
+    "region": "NEur",
+    "labor_rate_band": "high",
+    "lat": 48.38,
+    "lon": -4.5,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 3",
+        "kind": "graving",
+        "length_m": 420,
+        "beam_m": 80,
+        "depth_over_blocks_m": 13.0,
+        "max_dwt": 500000,
+        "cranes_json": [
+          80
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Blohm+Voss (Hamburg)",
+    "country": "Germany",
+    "region": "NEur",
+    "labor_rate_band": "high",
+    "lat": 53.54,
+    "lon": 9.96,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock Elbe 17",
+        "kind": "graving",
+        "length_m": 351,
+        "beam_m": 59,
+        "depth_over_blocks_m": 11.5,
+        "max_dwt": 250000,
+        "cranes_json": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lloyd Werft (Bremerhaven)",
+    "country": "Germany",
+    "region": "NEur",
+    "labor_rate_band": "high",
+    "lat": 53.55,
+    "lon": 8.58,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Kaiserdock II",
+        "kind": "graving",
+        "length_m": 335,
+        "beam_m": 46,
+        "depth_over_blocks_m": 9.5,
+        "max_dwt": 120000,
+        "cranes_json": [
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Astander (Santander)",
+    "country": "Spain",
+    "region": "NEur",
+    "labor_rate_band": "mid",
+    "lat": 43.46,
+    "lon": -3.79,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 3",
+        "kind": "graving",
+        "length_m": 235,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 90000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Navantia (Cadiz)",
+    "country": "Spain",
+    "region": "NEur",
+    "labor_rate_band": "mid",
+    "lat": 36.53,
+    "lon": -6.2,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "No.4 Dock",
+        "kind": "graving",
+        "length_m": 400,
+        "beam_m": 76,
+        "depth_over_blocks_m": 13.0,
+        "max_dwt": 400000,
+        "cranes_json": [
+          80
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Grand Bahama Shipyard (Freeport)",
+    "country": "Bahamas",
+    "region": "Am",
+    "labor_rate_band": "mid",
+    "lat": 26.53,
+    "lon": -78.77,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dock 1",
+        "kind": "floating",
+        "length_m": 275,
+        "beam_m": 47,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 130000,
+        "cranes_json": [
+          40
+        ]
+      },
+      {
+        "name": "Dock 2",
+        "kind": "floating",
+        "length_m": 227,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 90000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Detyens Shipyards (Charleston)",
+    "country": "USA",
+    "region": "Am",
+    "labor_rate_band": "high",
+    "lat": 32.86,
+    "lon": -79.96,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock 4",
+        "kind": "graving",
+        "length_m": 231,
+        "beam_m": 38,
+        "depth_over_blocks_m": 8.5,
+        "max_dwt": 70000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Vigor (Portland)",
+    "country": "USA",
+    "region": "Am",
+    "labor_rate_band": "high",
+    "lat": 45.6,
+    "lon": -122.72,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dry Dock",
+        "kind": "floating",
+        "length_m": 290,
+        "beam_m": 50,
+        "depth_over_blocks_m": 9.0,
+        "max_dwt": 120000,
+        "cranes_json": [
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Seaspan Vancouver Drydock",
+    "country": "Canada",
+    "region": "Am",
+    "labor_rate_band": "high",
+    "lat": 49.31,
+    "lon": -123.08,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock",
+        "kind": "floating",
+        "length_m": 235,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 90000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  },
+  {
+    "name": "EBRASA / Estaleiro Jurong (Aracruz)",
+    "country": "Brazil",
+    "region": "Am",
+    "labor_rate_band": "mid",
+    "lat": -19.83,
+    "lon": -40.07,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Dry Dock",
+        "kind": "graving",
+        "length_m": 350,
+        "beam_m": 60,
+        "depth_over_blocks_m": 11.0,
+        "max_dwt": 250000,
+        "cranes_json": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Dormac (Durban)",
+    "country": "South Africa",
+    "region": "Am",
+    "labor_rate_band": "mid",
+    "lat": -29.87,
+    "lon": 31.03,
+    "notes": "Planning-grade dock data \u2014 approximate, for shortlisting only.",
+    "docks": [
+      {
+        "name": "Floating Dock",
+        "kind": "floating",
+        "length_m": 235,
+        "beam_m": 40,
+        "depth_over_blocks_m": 8.0,
+        "max_dwt": 85000,
+        "cranes_json": [
+          35
+        ]
+      }
+    ]
+  }
+]
