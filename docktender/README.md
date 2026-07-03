@@ -9,10 +9,26 @@ Not "the first quote-comparison tool" — the competitive edge is *normalization
 (one canonical grid, AI-parsed quotes, exclusions surfaced), *Total Evaluated Cost*
 (sticker + deviation + off-hire + VO exposure), and *tariff-anchored VO control*.
 
-> Status: **Phase 0 (foundation) complete.** Backend scaffold, canonical work-item
-> library (176 items) and yard directory (46 yards), data model, auth + audit, seed +
-> tests + CI. Engines, API, and the frontend land in Phase 1 — see
-> `docs/EXECUTION_PLAN.md`.
+> Status: **Buyer side fully built (Phases 0–1d).** Every screen works end-to-end on
+> the seeded demo — no dead ends. Backend (FastAPI + engines + AI) with 35 tests;
+> Next.js frontend reproducing the approved design. Ship-manager procurement is
+> complete: docking clock → spec builder → tender room → AI-normalized leveling on
+> Total Evaluated Cost → award memo → VO control → settlement + yard scorecards.
+> Remaining: Vercel deployment (`docs/DEPLOY.md`) and the yard-side workbench
+> (Phase 3). See `docs/EXECUTION_PLAN.md`.
+
+## What's built
+
+| Area | Screens / capabilities |
+|---|---|
+| **Programme** | Command center: the Waterline fleet timeline, 134-day focus clock, KPIs, review queue, agent feed |
+| **Specifications** | Builder — 176-item library, section tree, copy-forward, freeze/versioning |
+| **Tenders** | Room (invite/issue, Q&A), portal + AI bid ingestion with human review, **leveling matrix** (TEC cards + by-section grid + exposure model), award memo PDF |
+| **Yards** | 46-yard directory with region filter + physical-fit (docking-draft aware) |
+| **Executions** | Live dockings + VO log priced against captured tariff, approve/dispute |
+| **Settlements** | Final-account reconciliation, growth KPI, yard scorecards |
+| **Assistant** | Docking-superintendent chat, read-only org-scoped tools, sealed-bid guard |
+| **Settings** | Per-user theme + 5-option signal accent, applied instantly |
 
 ## Repository layout
 
