@@ -331,6 +331,29 @@ td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numer
 .modal { background: var(--card); border: 1px solid var(--hairline-2); border-radius: var(--r-lg); width: 560px; max-width: 92vw; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lift); padding: 28px 30px; animation: pop var(--dur-2) var(--ease-out) both; }
 .modal h2 { letter-spacing: -.02em; }
 
+/* command palette */
+.rail-cmdk {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 0 0 14px; padding: 8px 11px; width: 100%; cursor: pointer;
+  background: color-mix(in srgb, var(--chrome-2) 60%, transparent); border: 1px solid var(--chrome-2);
+  border-radius: var(--r-sm); color: var(--chrome-dim); font: 500 12px var(--sans);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.rail-cmdk:hover { border-color: color-mix(in srgb, var(--signal) 50%, var(--chrome-2)); color: var(--chrome-ink); }
+.rail-cmdk kbd { font: 500 10.5px var(--mono); background: var(--chrome); border: 1px solid var(--chrome-2); border-radius: 4px; padding: 1px 5px; color: var(--chrome-dim); }
+.cmdk-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(6,10,16,.55); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: flex-start; padding-top: 14vh; animation: fade var(--dur) var(--ease) both; }
+.cmdk { width: 600px; max-width: 92vw; background: var(--glass); backdrop-filter: blur(20px) saturate(1.4); border: 1px solid var(--hairline-2); border-radius: var(--r-lg); box-shadow: var(--shadow-lift); overflow: hidden; animation: pop var(--dur-2) var(--ease-out) both; }
+.cmdk-input { width: 100%; border: none; background: transparent; color: var(--ink); font: 400 16px var(--sans); padding: 18px 20px; border-bottom: 1px solid var(--hairline); }
+.cmdk-input:focus { outline: none; }
+.cmdk-list { max-height: 52vh; overflow-y: auto; padding: 8px; }
+.cmdk-group { font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); padding: 10px 12px 4px; }
+.cmdk-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 10px 12px; border-radius: var(--r-sm); color: var(--ink-2); font: 500 13.5px var(--sans); }
+.cmdk-item.active { background: color-mix(in srgb, var(--signal) 16%, transparent); color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--signal) 24%, transparent); }
+.cmdk-hint { font-size: 11.5px; color: var(--ink-3); }
+.cmdk-empty { padding: 24px; text-align: center; color: var(--ink-3); font-size: 13px; }
+.cmdk-foot { display: flex; gap: 16px; padding: 10px 16px; border-top: 1px solid var(--hairline); font-size: 11px; color: var(--ink-3); }
+.cmdk-foot kbd { font: 500 10px var(--mono); background: var(--well); border: 1px solid var(--hairline-2); border-radius: 3px; padding: 1px 4px; margin-right: 3px; }
+
 /* yard cards */
 .yard-card { cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease); overflow: hidden; }
 .yard-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: var(--hairline-2); }

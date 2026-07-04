@@ -2,6 +2,7 @@
 import { UserProvider } from "@/lib/user";
 import { Rail } from "@/components/Rail";
 import { Assistant } from "@/components/Assistant";
+import { CommandPalette } from "@/components/CommandPalette";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="stage">{children}</main>
       </div>
       <Assistant />
+      <CommandPalette />
     </UserProvider>
   );
 }

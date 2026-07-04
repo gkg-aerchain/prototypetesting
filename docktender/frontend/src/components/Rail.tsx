@@ -23,6 +23,10 @@ export function Rail() {
       <div className="brand">
         Dock<em>Tender</em>
       </div>
+      <button className="rail-cmdk" onClick={() => window.dispatchEvent(new Event("cmdk-open"))}>
+        <span>Search &amp; commands</span>
+        <kbd>⌘K</kbd>
+      </button>
       {NAV.map((n) => {
         const active = pathname === n.href || pathname.startsWith(n.href + "/");
         return (
