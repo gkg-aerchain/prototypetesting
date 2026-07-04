@@ -15,10 +15,7 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      const { access_token } = await api.post<{ access_token: string }>("/api/auth/login", {
-        email,
-        password,
-      });
+      const { access_token } = await api.post<{ access_token: string }>("/api/auth/login", { email, password });
       setToken(access_token);
       router.replace("/programme");
     } catch (err) {
@@ -28,23 +25,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--chrome)" }}>
-      <div style={{ width: 380, maxWidth: "90vw" }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.02em", color: "#fff" }}>
-            Dock<span style={{ color: "var(--signal)" }}>Tender</span>
-          </div>
-          <div style={{ color: "var(--chrome-dim)", fontSize: 14, marginTop: 6 }}>
-            The tender room for dry-docking
-          </div>
-        </div>
-        <form
-          onSubmit={submit}
-          style={{
-            background: "var(--card)", border: "1px solid var(--hairline)", borderRadius: 8,
-            padding: 28, display: "grid", gap: 16,
-          }}
-        >
+    <div className="auth-wrap">
+      <div className="auth-aurora" aria-hidden />
+      <div className="auth-grid" aria-hidden />
+      <div className="auth-card">
+        <div className="auth-brand">Dock<em>Tender</em></div>
+        <p className="auth-tag">The tender room for dry-docking — plan the window, normalize every bid, and rank yards on <b>total evaluated cost</b>.</p>
+        <form onSubmit={submit} className="auth-form">
           <div className="field">
             <label>Email</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="username" />
@@ -53,14 +40,15 @@ export default function LoginPage() {
             <label>Password</label>
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" />
           </div>
-          {error && <div style={{ color: "var(--crit)", fontSize: 13 }}>{error}</div>}
+          {error && <div className="auth-err">{error}</div>}
           <button className="btn btn-signal" type="submit" disabled={busy} style={{ width: "100%" }}>
-            {busy ? "Signing in…" : "Sign in"}
+            {busy ? "Signing in…" : "Sign in →"}
           </button>
-          <div style={{ fontSize: 11.5, color: "var(--ink-3)", textAlign: "center" }}>
-            Demo tenant · Galene Maritime — credentials pre-filled
-          </div>
         </form>
+        <div className="auth-demo">
+          <span className="pill signal">Demo</span>
+          Galene Maritime tenant · credentials pre-filled
+        </div>
       </div>
     </div>
   );

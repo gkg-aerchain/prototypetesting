@@ -50,7 +50,7 @@ class User(TimestampMixin, Base):
     full_name: Mapped[str] = mapped_column(String(160), default="")
     role: Mapped[str] = mapped_column(String(24), default="superintendent")  # admin|superintendent|viewer
     accent: Mapped[str] = mapped_column(String(16), default="cerise")
-    theme: Mapped[str] = mapped_column(String(16), default="system")
+    theme: Mapped[str] = mapped_column(String(16), default="dark")
 
 
 # ----------------------------------------------------------------------------- fleet

@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 const themeScript = `
 (function () {
   try {
-    var t = localStorage.getItem('dt-theme') || 'system';
+    // Dark-first: unset defaults to dark; only an explicit choice overrides.
+    var t = localStorage.getItem('dt-theme') || 'dark';
     var a = localStorage.getItem('dt-accent') || 'cerise';
     var root = document.documentElement;
     if (t === 'light' || t === 'dark') root.setAttribute('data-theme', t);

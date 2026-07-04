@@ -73,7 +73,7 @@ def ensure_demo_user(db: Session, org: Organization) -> User:
     if not user:
         user = User(
             org_id=org.id, email=DEMO_EMAIL, password_hash=hash_password(DEMO_PASSWORD),
-            full_name="S. Nair", role="admin", accent="cerise", theme="system",
+            full_name="S. Nair", role="admin", accent="cerise", theme="dark",
         )
         db.add(user)
         db.flush()
