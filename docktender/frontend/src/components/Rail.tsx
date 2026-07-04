@@ -6,6 +6,7 @@ import { useUser } from "@/lib/user";
 
 const NAV = [
   { href: "/programme", label: "Programme", icon: Icons.programme },
+  { href: "/fleet", label: "Fleet", icon: Icons.fleet },
   { href: "/specifications", label: "Specifications", icon: Icons.specs },
   { href: "/tenders", label: "Tenders", icon: Icons.tenders },
   { href: "/yards", label: "Yards", icon: Icons.yards },

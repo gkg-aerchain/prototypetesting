@@ -188,9 +188,10 @@ def programme(user: User = Depends(get_current_user), db: Session = Depends(get_
     # ---- KPIs
     tenders_in_flight = db.scalar(select(func.count()).select_from(Tender)
                                   .where(Tender.org_id == org_id, Tender.status == "issued")) or 0
+    is_demo = org_name == DEMO_ORG_NAME
     bids_received, bids_expected = _bid_counts(db, org_id)
-    programme_value = _programme_value(db, org_id)
-    growth, growth_delta = _growth_kpi(db, org_id)
+    programme_value = _programme_value(db, org_id, is_demo)
+    growth, growth_delta = _growth_kpi(db, org_id, org_name)
 
     stats = [
         {"key": "programme", "label": "Programme · 12 mo", "value": programme_value,
@@ -266,7 +267,7 @@ def _bid_counts(db: Session, org_id: str):
     return received, max(expected, received)
 
 
-def _programme_value(db: Session, org_id: str) -> float:
+def _programme_value(db: Session, org_id: str, is_demo: bool = False) -> float:
     """Sum of recommended-bid TEC across active tenders, in $M (1 decimal)."""
     total = 0.0
     for t in db.scalars(select(Tender).where(Tender.org_id == org_id)):
@@ -276,12 +277,13 @@ def _programme_value(db: Session, org_id: str) -> float:
                                                        TecComponent.recommended == True))  # noqa: E712
             if rec:
                 total += rec.normalized_usd + rec.deviation_usd + rec.offhire_usd + rec.vo_exposure_usd
-    # add a planning allowance for budgeted-but-not-yet-tendered dockings
-    total += 11_300_000  # demo programme budget for the remaining dockings
+    if is_demo:
+        # planning allowance for the demo fleet's budgeted-but-not-yet-tendered dockings
+        total += 11_300_000
     return round(total / 1e6, 1)
 
 
-def _growth_kpi(db: Session, org_id: str):
+def _growth_kpi(db: Session, org_id: str, org_name: str = ""):
     from ..models import Award, FinalAccount
 
     fas = []
@@ -294,7 +296,8 @@ def _growth_kpi(db: Session, org_id: str):
     if not fas:
         return 0.0, ""
     avg = round(sum(fas) / len(fas), 1)
-    return avg, "▼ 2.1 pts vs last cycle"
+    delta = "▼ 2.1 pts vs last cycle" if org_name == DEMO_ORG_NAME else f"across {len(fas)} settled"
+    return avg, delta
 
 
 def _event_dict(db: Session, e: AgentEvent) -> dict:

@@ -1,6 +1,7 @@
 // Nav + UI icons (stroke, inherit currentColor). Kept as simple paths.
 export const Icons = {
   programme: <path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-4H3zM15 7h6V3h-6z" />,
+  fleet: <path d="M3 18l9-4 9 4M5 18V9l7-4 7 4v9M10 12h4" />,
   specs: <path d="M4 4h16v4H4zM4 12h10M4 17h13" />,
   tenders: <path d="M12 3v18M5 8l7-5 7 5M5 8v13h14V8" />,
   yards: <path d="M2 20h20M4 20V9l8-5 8 5v11M9 20v-6h6v6" />,

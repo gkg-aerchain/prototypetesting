@@ -71,11 +71,17 @@ def award(tender_id: str, body: AwardIn, user: User = Depends(get_current_user),
                checklist_json=body.checklist, awarded_at=datetime.now(timezone.utc))
     db.add(aw)
     t.status = "awarded"
-    # Capture the awarded yard's tariff to the vault (if the bid brought one).
+    # Capture the awarded yard's tariff to the vault (if the bid brought one) — store
+    # the bid's priced lines as the rate card that variation orders are priced against.
     if bid.tariff_captured:
+        tariff_lines = [
+            {"ref": ln.spec_item_id or ln.id, "item": ln.raw_text,
+             "uom": ln.uom, "qty": ln.qty, "rate": ln.rate, "amount": ln.amount}
+            for ln in bid.lines if ln.state == "priced" and ln.amount is not None
+        ]
         db.add(Tariff(yard_id=bid.yard_id, bid_id=bid.id,
                       doc_name=f"{t.ref} standard tariff",
-                      lines_json=[{"note": "captured at award"}]))
+                      lines_json=tariff_lines or [{"note": "no priced lines captured"}]))
     audit(db, org_id=user.org_id, actor_id=user.id, action="award", entity="tender",
           entity_id=t.id, detail={"bid_id": bid.id})
     db.commit()
