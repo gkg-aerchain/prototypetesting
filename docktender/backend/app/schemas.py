@@ -33,6 +33,8 @@ class UserOut(BaseModel):
     accent: str
     theme: str
     org_id: str
+    org: str = ""
+    vessel_count: int = 0
 
     class Config:
         from_attributes = True

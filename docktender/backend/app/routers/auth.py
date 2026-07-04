@@ -46,5 +46,16 @@ def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
 
 
 @router.get("/me", response_model=UserOut)
-def me(user: User = Depends(get_current_user)) -> User:
-    return user
+def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> UserOut:
+    from sqlalchemy import func
+
+    from ..models import Vessel
+
+    org = db.get(Organization, user.org_id)
+    vessel_count = db.scalar(select(func.count()).select_from(Vessel)
+                             .where(Vessel.org_id == user.org_id)) or 0
+    return UserOut(
+        id=user.id, email=user.email, full_name=user.full_name, role=user.role,
+        accent=user.accent, theme=user.theme, org_id=user.org_id,
+        org=org.name if org else "", vessel_count=vessel_count,
+    )

@@ -55,7 +55,7 @@ export const api = {
 // ------------------------------------------------------------------ types
 export interface Me {
   id: string; email: string; full_name: string; role: string;
-  accent: string; theme: string; org_id: string;
+  accent: string; theme: string; org_id: string; org: string; vessel_count: number;
 }
 
 export interface DockingWindow {
@@ -67,12 +67,13 @@ export interface VesselStatus {
   id: string; name: string; sub: string; driver: string;
   hard_stop: string | null; window_start: string | null; days_left: number | null;
   severity: string; in_dock: boolean; category: string; pill: string; pill_kind: string;
+  link: string | null;
 }
 
 export interface AgentEventDto {
   id: string; agent: string; agent_label: string; severity: string;
   vessel: string | null; message: string; evidence: string;
-  needs_decision: boolean; age: string;
+  needs_decision: boolean; age: string; link: string | null;
 }
 
 export interface Stat {
@@ -82,7 +83,7 @@ export interface Stat {
 export interface Programme {
   today: string; org: string; vessel_count: number; docking_count: number;
   waterline: VesselStatus[]; fleet_clock: VesselStatus[];
-  focus: { vessel: string; driver: string; days_left: number; hard_stop: string; sub: string } | null;
+  focus: { vessel: string; driver: string; days_left: number; hard_stop: string; sub: string; link: string | null } | null;
   stats: Stat[]; queue: AgentEventDto[]; feed: AgentEventDto[];
 }
 

@@ -9,10 +9,23 @@ export default function ProgrammePage() {
   const router = useRouter();
   const [p, setP] = useState<Programme | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [resolving, setResolving] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<Programme>("/api/programme").then(setP).catch((e) => setErr(String(e.message)));
   }, []);
+
+  const go = (link: string | null) => router.push(link || "/tenders");
+
+  async function resolve(id: string) {
+    setResolving(id);
+    try {
+      await api.patch(`/api/agents/events/${id}`);
+      setP((cur) => (cur ? { ...cur, queue: cur.queue.filter((q) => q.id !== id) } : cur));
+    } finally {
+      setResolving(null);
+    }
+  }
 
   if (err) return <div className="empty"><h3>Couldn’t load the programme</h3><p>{err}</p></div>;
   if (!p) return <ProgrammeSkeleton />;
@@ -40,7 +53,7 @@ export default function ProgrammePage() {
             <div className="k-label">Next hard stop · {p.focus.vessel} · {p.focus.driver}</div>
             <div className="k-value">{p.focus.days_left}<small> days</small></div>
             <div className="k-sub">{p.focus.sub}</div>
-            <div className="k-actions"><a onClick={() => router.push("/tenders")} style={{ cursor: "pointer" }}>Open leveling →</a></div>
+            <div className="k-actions"><a onClick={() => go(p.focus!.link)} style={{ cursor: "pointer" }}>Open leveling →</a></div>
           </div>
         )}
         {p.stats.map((s) => (
@@ -70,7 +83,7 @@ export default function ProgrammePage() {
               </thead>
               <tbody>
                 {p.fleet_clock.slice(0, 6).map((v) => (
-                  <tr className="rowlink" key={v.id} onClick={() => router.push("/tenders")}>
+                  <tr className="rowlink" key={v.id} onClick={() => go(v.link)}>
                     <td className="vessel-name"><b>{v.name}</b><span>{v.sub}</span></td>
                     <td>{v.driver}</td>
                     <td className="num">{windowCell(v)}</td>
@@ -88,8 +101,13 @@ export default function ProgrammePage() {
             {p.queue.length === 0 && <div style={{ padding: 16, fontSize: 13, color: "var(--ink-3)" }}>Nothing waiting on you.</div>}
             {p.queue.map((q) => (
               <div className="queue-item" key={q.id}>
-                <div className="q"><b>{q.message}</b><span>{q.agent_label} · {q.vessel}</span></div>
-                <button className="btn btn-quiet" onClick={() => router.push("/tenders")}>Review</button>
+                <div className="q"><b>{q.message}</b><span>{q.agent_label}{q.vessel ? ` · ${q.vessel}` : ""}</span></div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {q.link && <button className="btn btn-quiet" onClick={() => go(q.link)}>Review</button>}
+                  <button className="btn btn-quiet" disabled={resolving === q.id} onClick={() => resolve(q.id)}>
+                    {resolving === q.id ? "…" : "Resolve"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

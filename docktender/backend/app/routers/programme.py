@@ -65,7 +65,28 @@ def _vessel_status(db: Session, org_id: str, vessel: Vessel, today: date) -> dic
         "category": category,
         "pill": pill,
         "pill_kind": pill_kind,
+        "link": _vessel_link(db, vessel.id),
     }
+
+
+def _vessel_link(db: Session, vessel_id: str) -> str | None:
+    """The most useful destination for a vessel: its leveling if a tender has been
+    evaluated, else its tender room, else its (draft) specification. None if the
+    vessel has no spec yet."""
+    from ..models import Specification
+
+    specs = list(db.scalars(select(Specification).where(Specification.vessel_id == vessel_id)))
+    if not specs:
+        return None
+    spec_ids = [s.id for s in specs]
+    tenders = list(db.scalars(select(Tender).where(Tender.spec_id.in_(spec_ids))))
+    for t in tenders:
+        if db.scalar(select(Evaluation).where(Evaluation.tender_id == t.id)):
+            return f"/tenders/{t.id}/leveling"
+    if tenders:
+        return f"/tenders/{tenders[0].id}"
+    draft = next((s for s in specs if s.status == "draft"), specs[0])
+    return f"/specifications/{draft.id}"
 
 
 def _vessel_pill(db: Session, org_id: str, vessel: Vessel, today: date):
@@ -161,6 +182,7 @@ def programme(user: User = Depends(get_current_user), db: Session = Depends(get_
             "days_left": focus_v["days_left"],
             "hard_stop": focus_v["hard_stop"],
             "sub": _focus_sub(db, org_id, focus_v),
+            "link": focus_v.get("link"),
         }
 
     # ---- KPIs
@@ -287,6 +309,7 @@ def _event_dict(db: Session, e: AgentEvent) -> dict:
         "evidence": e.evidence,
         "needs_decision": e.needs_decision,
         "age": _age(e.ts),
+        "link": _vessel_link(db, e.vessel_id) if e.vessel_id else None,
     }
 
 

@@ -54,6 +54,12 @@ a { color: var(--signal-deep); text-decoration: none; }
   border-top: 1px solid var(--chrome-2);
 }
 .rail .rail-foot b { color: var(--chrome-ink); font-weight: 600; display: block; }
+.rail .rail-signout {
+  margin-top: 8px; display: block; width: 100%; text-align: left;
+  background: transparent; border: 1px solid var(--chrome-2); border-radius: 6px;
+  color: var(--chrome-dim); font: inherit; font-size: 11.5px; padding: 5px 8px; cursor: pointer;
+}
+.rail .rail-signout:hover { color: #fff; border-color: var(--signal); }
 .stage { padding: 26px 34px 40px; min-width: 0; background: var(--paper); }
 .stage-head {
   display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;

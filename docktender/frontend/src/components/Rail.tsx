@@ -15,7 +15,7 @@ const NAV = [
 
 export function Rail() {
   const pathname = usePathname();
-  const { me } = useUser();
+  const { me, logout } = useUser();
 
   return (
     <nav className="rail">
@@ -40,8 +40,9 @@ export function Rail() {
           Settings
         </Link>
         <div className="rail-foot">
-          <b>{me?.org_id ? "Galene Maritime · 12 vessels" : "—"}</b>
-          {me?.full_name || "—"} — Docking Supt.
+          <b>{me ? `${me.org} · ${me.vessel_count} vessel${me.vessel_count === 1 ? "" : "s"}` : "—"}</b>
+          {me?.full_name || me?.email || "—"} — Docking Supt.
+          <button type="button" className="rail-signout" onClick={logout}>Sign out</button>
         </div>
       </div>
     </nav>

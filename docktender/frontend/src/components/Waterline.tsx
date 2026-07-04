@@ -108,7 +108,7 @@ export function Waterline({ today, vessels }: { today: string; vessels: VesselSt
           const show = labelled.has(v.id);
           return (
             <g key={`v-${v.id}`} style={{ cursor: "pointer" }}
-               onClick={() => router.push(`/tenders`)}>
+               onClick={() => router.push(v.link || "/tenders")}>
               <line x1={vx} y1={60} x2={vx} y2={84} stroke={stroke} strokeWidth={isSignal ? 1.4 : 1.2} />
               <circle cx={vx} cy={86} r={isSignal ? 3.4 : 3.2} fill={stroke} />
               {show && (
@@ -131,7 +131,8 @@ export function Waterline({ today, vessels }: { today: string; vessels: VesselSt
           const label = `${v.name} · ${dockDayLabel(v.pill)}`;
           const w = Math.max(118, label.length * 6.0);
           return (
-            <g key={`dock-${v.id}`}>
+            <g key={`dock-${v.id}`} style={{ cursor: "pointer" }}
+               onClick={() => router.push(v.link || "/executions")}>
               <rect x={cx} y={100} width={w} height={16} rx="3" fill="var(--chrome)" />
               <text x={cx + w / 2} y={111.5} textAnchor="middle" fontFamily="Geist, sans-serif"
                     fontSize="10" fontWeight="600" fill="var(--chrome-ink)">{label}</text>
