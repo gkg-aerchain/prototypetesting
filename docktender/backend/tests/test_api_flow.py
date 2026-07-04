@@ -69,16 +69,23 @@ def test_full_buyer_flow(client, auth):
     issued = client.post(f"/api/tenders/{tid}/issue", headers=auth)
     assert issued.json()["status"] == "issued"
 
-    # two portal bids
+    # two portal bids — the second is cheaper on sticker but has deviation + an
+    # exclusion that price its total evaluated cost higher.
     b1 = client.post(f"/api/tenders/{tid}/bids", headers=auth, json={
         "yard_id": yard_ids[0], "currency": "USD", "dock_days": 13, "tariff_captured": True,
+        "deviation_nm": 300, "port_fees_usd": 40000,
         "lines": [{"raw_text": "General services", "amount": 300000, "state": "priced", "uom": "lot"}]})
     assert b1.status_code == 201
     b2 = client.post(f"/api/tenders/{tid}/bids", headers=auth, json={
         "yard_id": yard_ids[1], "currency": "USD", "dock_days": 16, "tariff_captured": False,
+        "deviation_nm": 2400, "port_fees_usd": 0,
         "lines": [{"raw_text": "General services", "amount": 260000, "state": "priced", "uom": "lot"},
-                  {"raw_text": "Grit disposal", "state": "excluded"}]})
+                  {"raw_text": "Grit disposal", "state": "excluded", "exposure_median_usd": 40000}]})
     assert b2.status_code == 201
+
+    # the bids-list endpoint powers the review screen
+    blist = client.get(f"/api/tenders/{tid}/bids", headers=auth).json()
+    assert len(blist) == 2 and all(b["source"] == "portal" for b in blist)
 
     # evaluate + leveling
     ev = client.post(f"/api/tenders/{tid}/evaluate", json={}, headers=auth)
@@ -88,6 +95,9 @@ def test_full_buyer_flow(client, auth):
     # the complete, tariff-captured bid should rank first on TEC despite higher sticker
     assert lev["cards"][0]["rank"] == 1
     assert lev["cards"][0]["recommended"] is True
+    # deviation genuinely priced into the winner's composition
+    dev = next(c for c in lev["cards"][0]["composition"] if c["key"] == "deviation")
+    assert dev["usd"] > 0
 
     # award + memo PDF
     prev = client.get(f"/api/tenders/{tid}/award/preview", headers=auth).json()

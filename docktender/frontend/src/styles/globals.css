@@ -331,6 +331,12 @@ td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numer
 .modal { background: var(--card); border: 1px solid var(--hairline-2); border-radius: var(--r-lg); width: 560px; max-width: 92vw; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lift); padding: 28px 30px; animation: pop var(--dur-2) var(--ease-out) both; }
 .modal h2 { letter-spacing: -.02em; }
 
+/* invite picker */
+.invite-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--hairline); cursor: pointer; transition: background var(--dur) var(--ease); }
+.invite-row:last-child { border-bottom: 0; }
+.invite-row:hover { background: color-mix(in srgb, var(--signal-tint) 30%, transparent); }
+.invite-row b { font-size: 13px; }
+
 /* review heat */
 .heat { display: inline-block; width: 42px; height: 6px; border-radius: 3px; background: var(--well); position: relative; }
 .heat i { display: block; height: 100%; border-radius: 3px; }

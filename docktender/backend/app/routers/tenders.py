@@ -41,6 +41,7 @@ def _tender_summary(db: Session, t: Tender) -> dict:
         "id": t.id, "ref": t.ref, "status": t.status,
         "vessel": vessel.name if vessel else "—",
         "vessel_type": vessel.vessel_type if vessel else "",
+        "vessel_id": vessel.id if vessel else None,
         "spec_id": t.spec_id, "spec_title": spec.title if spec else "",
         "deadline": t.deadline.isoformat() if t.deadline else None,
         "offhire_usd_day": t.offhire_usd_day,

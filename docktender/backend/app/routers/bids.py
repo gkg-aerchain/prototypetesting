@@ -63,7 +63,8 @@ def create_portal_bid(tender_id: str, body: BidIn, user: User = Depends(get_curr
         tender_id=t.id, yard_id=body.yard_id, currency=body.currency,
         dock_id=body.dock_id, dock_days=body.dock_days,
         tariff_captured=body.tariff_captured, source="portal",
-        sealed_until=t.deadline,
+        sealed_until=t.deadline, deviation_nm=body.deviation_nm,
+        port_fees_usd=body.port_fees_usd, growth_pct=body.growth_pct,
     )
     db.add(bid)
     db.flush()
@@ -72,6 +73,7 @@ def create_portal_bid(tender_id: str, body: BidIn, user: User = Depends(get_curr
             bid_id=bid.id, spec_item_id=ln.spec_item_id, raw_text=ln.raw_text,
             uom=ln.uom, qty=ln.qty, rate=ln.rate, amount=ln.amount,
             state=ln.state, assumptions=ln.assumptions,
+            exposure_median_usd=ln.exposure_median_usd, below_norm_usd=ln.below_norm_usd,
         ))
     _mark_invited(db, t, body.yard_id)
     audit(db, org_id=user.org_id, actor_id=user.id, action="bid_received", entity="tender", entity_id=t.id)
@@ -132,6 +134,26 @@ def ingest_bid(tender_id: str, yard_id: str = Body(...), text: str = Body(...),
           entity_id=t.id, detail={"lines": len(parsed["lines"]), "low_confidence": low})
     db.commit()
     return {"bid_id": bid.id, "lines": len(parsed["lines"]), "low_confidence": low}
+
+
+@router.get("/tenders/{tender_id}/bids")
+def list_bids(tender_id: str, user: User = Depends(get_current_user),
+              db: Session = Depends(get_db)) -> list[dict]:
+    """Bids received for a tender, with review progress for the review screen."""
+    t = _tender(db, tender_id, user.org_id)
+    out = []
+    for bid in db.scalars(select(Bid).where(Bid.tender_id == t.id)):
+        yard = db.get(Yard, bid.yard_id) if bid.yard_id else None
+        lines = list(bid.lines)
+        needs_review = [l for l in lines if l.ai_confidence is not None and l.reviewed_by is None]
+        out.append({
+            "bid_id": bid.id, "yard": yard.name if yard else "—",
+            "region": yard.region if yard else "", "source": bid.source,
+            "currency": bid.currency, "dock_days": bid.dock_days,
+            "lines": len(lines), "unreviewed": len(needs_review),
+            "tariff_captured": bid.tariff_captured,
+        })
+    return out
 
 
 @router.get("/bids/{bid_id}/review")

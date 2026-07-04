@@ -103,8 +103,23 @@ export interface WorkItem {
 
 export interface TenderSummary {
   id: string; ref: string; status: string; vessel: string; vessel_type: string;
-  spec_id: string; spec_title: string; deadline: string | null;
+  vessel_id: string | null; spec_id: string; spec_title: string; deadline: string | null;
   offhire_usd_day: number; bids: number; invited: number;
+}
+
+export interface BidSummary {
+  bid_id: string; yard: string; region: string; source: string; currency: string;
+  dock_days: number; lines: number; unreviewed: number; tariff_captured: boolean;
+}
+export interface BidReviewLine {
+  id: string; raw_text: string; uom: string; qty: number | null; rate: number | null;
+  amount: number | null; state: string; ai_confidence: number | null; reviewed: boolean;
+  spec_item_id: string | null; proposed_spec_item_id: string | null; target_title: string | null;
+}
+export interface BidReview {
+  bid_id: string; yard: string; source: string; currency: string; dock_days: number;
+  spec_items: { id: string; title: string; line_no: number }[];
+  lines: BidReviewLine[];
 }
 
 export interface Invitation {

@@ -123,6 +123,8 @@ class BidLineIn(BaseModel):
     amount: float | None = None
     state: str = "priced"
     assumptions: str = ""
+    exposure_median_usd: float | None = None
+    below_norm_usd: float | None = None
 
 
 class BidIn(BaseModel):
@@ -131,6 +133,9 @@ class BidIn(BaseModel):
     dock_id: str | None = None
     dock_days: int = 0
     tariff_captured: bool = False
+    deviation_nm: float = 0.0
+    port_fees_usd: float = 0.0
+    growth_pct: float | None = None
     lines: list[BidLineIn] = []
 
 
