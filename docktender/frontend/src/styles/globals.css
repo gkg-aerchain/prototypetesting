@@ -60,6 +60,25 @@ a { color: var(--signal-deep); text-decoration: none; }
   color: var(--chrome-dim); font: inherit; font-size: 11.5px; padding: 5px 8px; cursor: pointer;
 }
 .rail .rail-signout:hover { color: #fff; border-color: var(--signal); }
+/* inline spec-line editors */
+.inline-note {
+  margin: 0 0 14px; padding: 9px 12px; border-radius: 7px; font-size: 12.5px;
+  background: color-mix(in srgb, var(--warn) 12%, var(--card)); color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+}
+.normline { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+.speclines .qty-inp, .speclines .uom-inp, .speclines .note-inp, .speclines .origin-sel {
+  font: 400 12.5px var(--sans); color: var(--ink); background: var(--card);
+  border: 1px solid var(--hairline-2); border-radius: 5px; padding: 4px 6px;
+}
+.speclines .qty-inp { width: 74px; text-align: right; font-family: var(--mono); }
+.speclines .uom-inp { width: 68px; }
+.speclines .note-inp { width: 100%; margin-top: 4px; }
+.speclines .origin-sel { padding: 4px 4px; }
+.speclines .qty-inp:focus, .speclines .uom-inp:focus, .speclines .note-inp:focus,
+.speclines .origin-sel:focus { outline: none; border-color: var(--signal); }
+.tbc-lbl { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-3); cursor: pointer; }
+.lib-item .basis { font-size: 10.5px; color: var(--ink-3); margin-top: 2px; opacity: .85; }
 .stage { padding: 26px 34px 40px; min-width: 0; background: var(--paper); }
 .stage-head {
   display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;

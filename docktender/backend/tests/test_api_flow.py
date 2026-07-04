@@ -41,10 +41,21 @@ def test_full_buyer_flow(client, auth):
     ])
     assert add.status_code == 201
     assert add.json()["items"] == 2
+
+    # edit a spec line: quantity + TBC flag persist through a re-read
+    line0 = client.get(f"/api/specs/{sid}", headers=auth).json()["item_list"][0]
+    patched = client.patch(f"/api/specs/{sid}/items/{line0['id']}", headers=auth,
+                           json={"qty": 48.2, "qty_tbc": True, "notes": "est. from UT gauging"})
+    assert patched.status_code == 200 and patched.json()["qty"] == 48.2
+    reread = client.get(f"/api/specs/{sid}", headers=auth).json()["item_list"][0]
+    assert reread["qty"] == 48.2 and reread["qty_tbc"] is True and reread["notes"] == "est. from UT gauging"
+
     frozen = client.post(f"/api/specs/{sid}/freeze", headers=auth)
     assert frozen.status_code == 200 and frozen.json()["status"] == "frozen"
-    # adding to a frozen spec is rejected
+    # adding to / editing a frozen spec is rejected
     assert client.post(f"/api/specs/{sid}/items", headers=auth, json=[]).status_code == 422
+    assert client.patch(f"/api/specs/{sid}/items/{line0['id']}", headers=auth,
+                        json={"qty": 1}).status_code == 422
 
     # tender + invite + issue
     t = client.post("/api/tenders", json={

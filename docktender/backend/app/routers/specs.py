@@ -11,7 +11,7 @@ from ..core.audit import audit
 from ..db import get_db
 from ..deps import get_current_user
 from ..models import Specification, SpecItem, Tender, User, Vessel, WorkItem
-from ..schemas import SpecIn, SpecItemIn
+from ..schemas import SpecIn, SpecItemIn, SpecItemPatch
 
 router = APIRouter(prefix="/api", tags=["specs"])
 
@@ -110,6 +110,28 @@ def add_items(spec_id: str, body: list[SpecItemIn], user: User = Depends(get_cur
           entity_id=s.id, detail={"count": len(body)})
     db.commit()
     return _spec_summary(db, s)
+
+
+@router.patch("/specs/{spec_id}/items/{item_id}")
+def update_item(spec_id: str, item_id: str, body: SpecItemPatch,
+                user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    """Edit a spec line — quantity, unit, TBC flag, origin, notes. Blocked once the
+    spec is frozen (a frozen spec is the contractual scope sent to yards)."""
+    s = _guard(db, spec_id, user.org_id)
+    if s.status == "frozen":
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Specification is frozen")
+    si = db.get(SpecItem, item_id)
+    if not si or si.spec_id != s.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Line not found")
+    for field in ("qty", "uom", "qty_tbc", "origin", "notes", "title"):
+        val = getattr(body, field)
+        if val is not None:
+            setattr(si, field, val)
+    audit(db, org_id=user.org_id, actor_id=user.id, action="update_item", entity="spec_item",
+          entity_id=si.id)
+    db.commit()
+    return {"id": si.id, "line_no": si.line_no, "title": si.title, "qty": si.qty,
+            "uom": si.uom, "qty_tbc": si.qty_tbc, "origin": si.origin, "notes": si.notes}
 
 
 @router.delete("/specs/{spec_id}/items/{item_id}", status_code=204)

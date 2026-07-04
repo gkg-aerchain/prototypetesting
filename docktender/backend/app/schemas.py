@@ -82,6 +82,15 @@ class SpecItemIn(BaseModel):
     notes: str = ""
 
 
+class SpecItemPatch(BaseModel):
+    qty: float | None = None
+    uom: str | None = None
+    qty_tbc: bool | None = None
+    origin: str | None = None
+    notes: str | None = None
+    title: str | None = None
+
+
 # ----------------------------------------------------------------- tenders
 class TenderIn(BaseModel):
     spec_id: str
