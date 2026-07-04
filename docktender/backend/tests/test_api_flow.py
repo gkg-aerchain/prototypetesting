@@ -69,6 +69,11 @@ def test_full_buyer_flow(client, auth):
     issued = client.post(f"/api/tenders/{tid}/issue", headers=auth)
     assert issued.json()["status"] == "issued"
 
+    # leveling before any bids is a graceful empty state, not an error
+    empty = client.get(f"/api/tenders/{tid}/leveling", headers=auth)
+    assert empty.status_code == 200
+    assert empty.json()["cards"] == [] and empty.json()["evaluated"] is False
+
     # two portal bids — the second is cheaper on sticker but has deviation + an
     # exclusion that price its total evaluated cost higher.
     b1 = client.post(f"/api/tenders/{tid}/bids", headers=auth, json={

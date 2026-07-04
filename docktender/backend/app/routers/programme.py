@@ -188,10 +188,9 @@ def programme(user: User = Depends(get_current_user), db: Session = Depends(get_
     # ---- KPIs
     tenders_in_flight = db.scalar(select(func.count()).select_from(Tender)
                                   .where(Tender.org_id == org_id, Tender.status == "issued")) or 0
-    is_demo = org_name == DEMO_ORG_NAME
     bids_received, bids_expected = _bid_counts(db, org_id)
-    programme_value = _programme_value(db, org_id, is_demo)
-    growth, growth_delta = _growth_kpi(db, org_id, org_name)
+    programme_value = _programme_value(db, org_id)
+    growth, growth_delta = _growth_kpi(db, org_id)
 
     stats = [
         {"key": "programme", "label": "Programme · 12 mo", "value": programme_value,
@@ -228,6 +227,8 @@ def programme(user: User = Depends(get_current_user), db: Session = Depends(get_
 def _focus_sub(db: Session, org_id: str, focus_v: dict) -> str:
     from ..models import Specification
 
+    driver = focus_v.get("driver") or "Class survey"
+    window = f"{driver} window closes {_fmt_date(focus_v['hard_stop'])}"
     spec_ids = [s.id for s in db.scalars(
         select(Specification).where(Specification.vessel_id == focus_v["id"]))]
     if spec_ids:
@@ -236,9 +237,13 @@ def _focus_sub(db: Session, org_id: str, focus_v: dict) -> str:
         if t:
             n_bids = db.scalar(select(func.count()).select_from(Bid)
                                .where(Bid.tender_id == t.id)) or 0
-            hs = focus_v["hard_stop"]
-            return f"36-month rule stops on {_fmt_date(hs)} · {n_bids} bids in, leveling ready"
-    return f"36-month rule stops on {_fmt_date(focus_v['hard_stop'])}"
+            tail = f"{n_bids} bids in, leveling ready" if n_bids else "tender out, awaiting bids"
+            return f"{window} · {tail}"
+        draft = db.scalar(select(Tender).where(Tender.spec_id.in_(spec_ids),
+                                               Tender.status == "draft"))
+        if draft:
+            return f"{window} · spec in draft"
+    return window
 
 
 def _fmt_date(iso: str | None) -> str:
@@ -267,23 +272,40 @@ def _bid_counts(db: Session, org_id: str):
     return received, max(expected, received)
 
 
-def _programme_value(db: Session, org_id: str, is_demo: bool = False) -> float:
-    """Sum of recommended-bid TEC across active tenders, in $M (1 decimal)."""
+def _programme_value(db: Session, org_id: str) -> float:
+    """Committed + evaluated programme value in $M (1 decimal): recommended-bid TEC of
+    tenders under evaluation, awarded-bid TEC of live dockings, and settled final
+    accounts. A genuine roll-up of every docking with a costed figure — no constant."""
+    from ..models import Award
+
     total = 0.0
     for t in db.scalars(select(Tender).where(Tender.org_id == org_id)):
+        aw = db.scalar(select(Award).where(Award.tender_id == t.id))
+        fa = None
+        if aw:
+            from ..models import FinalAccount as _FA
+            fa = db.scalar(select(_FA).where(_FA.award_id == aw.id))
+        if fa:
+            total += fa.final_usd
+            continue
         ev = db.scalar(select(Evaluation).where(Evaluation.tender_id == t.id))
-        if ev:
-            rec = db.scalar(select(TecComponent).where(TecComponent.evaluation_id == ev.id,
-                                                       TecComponent.recommended == True))  # noqa: E712
-            if rec:
-                total += rec.normalized_usd + rec.deviation_usd + rec.offhire_usd + rec.vo_exposure_usd
-    if is_demo:
-        # planning allowance for the demo fleet's budgeted-but-not-yet-tendered dockings
-        total += 11_300_000
+        if not ev:
+            continue
+        comp = None
+        if aw:  # awarded → value the awarded bid
+            comp = db.scalar(select(TecComponent).where(TecComponent.evaluation_id == ev.id,
+                                                        TecComponent.bid_id == aw.bid_id))
+        if comp is None:  # else the recommended bid
+            comp = db.scalar(select(TecComponent).where(TecComponent.evaluation_id == ev.id,
+                                                        TecComponent.recommended == True))  # noqa: E712
+        if comp:
+            total += comp.normalized_usd + comp.deviation_usd + comp.offhire_usd + comp.vo_exposure_usd
     return round(total / 1e6, 1)
 
 
-def _growth_kpi(db: Session, org_id: str, org_name: str = ""):
+def _growth_kpi(db: Session, org_id: str):
+    """Average final-vs-quoted growth across settled dockings, most-recent first, with
+    a real delta between the latest settlement and the running average."""
     from ..models import Award, FinalAccount
 
     fas = []
@@ -291,13 +313,19 @@ def _growth_kpi(db: Session, org_id: str, org_name: str = ""):
         award = db.scalar(select(Award).where(Award.tender_id == t.id))
         if award:
             fa = db.scalar(select(FinalAccount).where(FinalAccount.award_id == award.id))
-            if fa:
-                fas.append(fa.growth_pct)
+            if fa and fa.closed_at:
+                fas.append((fa.closed_at, fa.growth_pct))
     if not fas:
-        return 0.0, ""
-    avg = round(sum(fas) / len(fas), 1)
-    delta = "▼ 2.1 pts vs last cycle" if org_name == DEMO_ORG_NAME else f"across {len(fas)} settled"
-    return avg, delta
+        return 0.0, "no settled dockings yet"
+    fas.sort(key=lambda x: x[0])
+    growths = [g for _, g in fas]
+    avg = round(sum(growths) / len(growths), 1)
+    if len(growths) >= 2:
+        prev_avg = round(sum(growths[:-1]) / len(growths[:-1]), 1)
+        d = round(growths[-1] - prev_avg, 1)
+        arrow = "▼" if d < 0 else "▲"
+        return avg, f"{arrow} {abs(d)} pts · latest vs prior avg"
+    return avg, f"across {len(growths)} settled docking"
 
 
 def _event_dict(db: Session, e: AgentEvent) -> dict:
@@ -317,12 +345,13 @@ def _event_dict(db: Session, e: AgentEvent) -> dict:
 
 
 def _age(ts) -> str:
-    from datetime import datetime
+    from datetime import datetime, timezone
 
-    delta = datetime(2026, 7, 3, 9, 0) - ts
-    mins = int(delta.total_seconds() // 60)
+    now = datetime.now(timezone.utc)
+    ts = ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+    mins = max(0, int((now - ts).total_seconds() // 60))
     if mins < 60:
-        return f"{max(mins, 0)} min"
+        return f"{mins} min"
     hrs = mins // 60
     if hrs < 24:
         return f"{hrs} h"

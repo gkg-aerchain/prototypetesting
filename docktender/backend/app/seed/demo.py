@@ -66,6 +66,23 @@ FLEET = [
      date(2025, 8, 12), 2, True, False, 19500),
     ("Andros Pioneer", "LR2", 114800, 250.0, 44.0, 14.9, 63000, 2018, "LR",
      date(2025, 10, 3), 1, True, True, 22000),
+    # Broader fleet — varied classes and lifecycle stages (all windowed after Kalymnos).
+    ("Rhenia Sovereign", "VLCC", 299000, 332.0, 60.0, 22.5, 156000, 2016, "DNV",
+     date(2024, 5, 8), 2, True, False, 41000),
+    ("Delos Ambassador", "Suezmax", 158000, 274.0, 48.0, 17.1, 82000, 2017, "ABS",
+     date(2024, 8, 24), 2, True, True, 34000),
+    ("Kea Endeavour", "LR1", 74500, 228.0, 32.2, 14.1, 42500, 2019, "LR",
+     date(2024, 10, 12), 1, True, False, 18200),
+    ("Syros Guardian", "MR", 49900, 183.0, 32.2, 13.0, 29000, 2021, "BV",
+     date(2025, 2, 18), 1, True, False, 16000),
+    ("Tinos Navigator", "Aframax", 106500, 249.0, 44.0, 14.8, 58600, 2016, "DNV",
+     date(2025, 4, 6), 2, True, False, 19500),
+    ("Mykonos Sentinel", "VLCC", 300500, 333.0, 60.0, 22.6, 157000, 2019, "LR",
+     date(2025, 6, 14), 1, True, True, 41500),
+    ("Kythnos Chemist", "Chemical", 25000, 170.0, 28.0, 10.5, 16800, 2020, "BV",
+     date(2025, 7, 2), 1, False, False, 13500),
+    ("Antiparos Trader", "Handysize", 37000, 180.0, 30.0, 11.2, 22000, 2015, "ABS",
+     date(2024, 12, 1), 2, True, False, 14500),
 ]
 
 # The 3 leveling bids, calibrated to the engine (see test_tec.py).
@@ -184,7 +201,7 @@ def seed_demo_data(db: Session, org: Organization) -> None:
         db.add(Invitation(tender_id=tender.id, yard_id=fourth.id, status="invited"))
 
     # ---- evaluation + TEC components (computed by the engine)
-    _build_evaluation(db, tender, bid_rows)
+    _store_evaluation(db, tender)
 
     # ---- Thera Compass: tender out, 7 invited (no bids yet)
     _build_thera_tender(db, org, vessels["Thera Compass"])
@@ -197,6 +214,9 @@ def seed_demo_data(db: Session, org: Organization) -> None:
 
     # ---- Milos Beacon settlement (final account, +9.4% growth)
     _build_milos_settlement(db, org, vessels["Milos Beacon"])
+
+    # ---- broader operating fleet: more tenders, settlements, and a live docking
+    _build_more_scenarios(db, org, vessels)
 
     # ---- yard scorecards (history that also feeds growth defaults)
     _build_yard_scores(db)
@@ -339,18 +359,21 @@ def _build_bid_lines(db: Session, bid: Bid, bspec: dict, section_items: dict[int
         ))
 
 
-def _build_evaluation(db: Session, tender: Tender, bids: list[Bid]) -> None:
+def _store_evaluation(db: Session, tender: Tender) -> None:
+    """Compute + persist a tender's TEC evaluation from its stored bids via the same
+    assembler the live /evaluate endpoint uses. Used for every seeded scenario, so
+    there is one computation path — no hardcoded numbers anywhere."""
     from ..engines.assemble import build_bid_evals
     from ..engines.tec import TecParams, evaluate
 
-    # Compute the demo's TEC from the stored bids/lines via the same assembler the
-    # live /evaluate endpoint uses — no hardcoded normalized totals or exposure dicts.
     # Bid lines were linked by raw FK during seeding, so expire cached collections to
     # force the assembler to read the freshly-flushed lines from the DB.
     db.flush()
     db.expire_all()
     params = TecParams(offhire_usd_day=tender.offhire_usd_day)
     evals = build_bid_evals(db, tender)
+    if not evals:
+        return
     comps = evaluate(evals, params)
 
     ev = Evaluation(tender_id=tender.id, params_json={
@@ -489,13 +512,201 @@ def _build_milos_settlement(db: Session, org: Organization, milos: Vessel) -> No
     ))
 
 
+SECTION_TITLES = {
+    1: "General services", 2: "Hull treatment", 3: "Steel renewals", 4: "Sea valves & overboards",
+    5: "Propulsion & tail shaft", 6: "Boiler & economizer", 7: "Piping & tanks",
+    8: "Machinery", 9: "Electrical & automation", 10: "Class & surveys",
+}
+
+
+def _light_spec(db: Session, org: Organization, vessel: Vessel, title: str,
+                status: str = "frozen", frozen_on: date | None = None) -> Specification:
+    """A frozen spec with one representative library item per section — enough for the
+    leveling matrix to map real per-section bid lines."""
+    spec = Specification(org_id=org.id, vessel_id=vessel.id, title=title, status=status,
+                         version=1, frozen_at=_dt(frozen_on) if (status == "frozen" and frozen_on) else None)
+    db.add(spec)
+    db.flush()
+    rep: dict[int, WorkItem] = {}
+    for wi in db.scalars(select(WorkItem)):
+        rep.setdefault(wi.section, wi)
+    for sec in range(1, 11):
+        wi = rep.get(sec)
+        if wi:
+            db.add(SpecItem(spec_id=spec.id, work_item_id=wi.id, line_no=sec, title=wi.title,
+                            qty=1, uom=wi.uom, origin="owner"))
+    db.flush()
+    return spec
+
+
+def _make_bid(db: Session, tender: Tender, yard_key: str, dock_days: int, dev_nm: float,
+              port_fees: float, growth: float, tariff: bool, sections: dict[int, float],
+              exclusions: list[dict] | None = None, slot: tuple[date, date] | None = None) -> Bid:
+    yard = _match_yard(db, yard_key)
+    bid = Bid(tender_id=tender.id, yard_id=yard.id if yard else "", currency="USD",
+              dock_days=dock_days, tariff_captured=tariff, source="portal",
+              deviation_nm=dev_nm, port_fees_usd=port_fees, growth_pct=growth,
+              slot_start=_dt(slot[0]) if slot else None, slot_end=_dt(slot[1]) if slot else None,
+              sealed_until=tender.deadline)
+    db.add(bid)
+    db.flush()
+    if yard:
+        _match_or_add_invite(db, tender, yard.id)
+    items = {si.line_no: si for si in db.scalars(select(SpecItem).where(SpecItem.spec_id == tender.spec_id))}
+    for sec, amount in sections.items():
+        si = items.get(sec)
+        db.add(BidLine(bid_id=bid.id, spec_item_id=si.id if si else None,
+                       raw_text=SECTION_TITLES.get(sec, f"Section {sec}"), uom="lot",
+                       amount=float(amount), state="priced"))
+    for exc in (exclusions or []):
+        db.add(BidLine(bid_id=bid.id, spec_item_id=None, raw_text=exc["label"], state="excluded",
+                       assumptions="Excluded from bid scope", exposure_median_usd=exc.get("median")))
+    return bid
+
+
+def _match_or_add_invite(db: Session, tender: Tender, yard_id: str) -> None:
+    inv = db.scalar(select(Invitation).where(Invitation.tender_id == tender.id,
+                                             Invitation.yard_id == yard_id))
+    if inv:
+        inv.status = "bid_received"
+    else:
+        db.add(Invitation(tender_id=tender.id, yard_id=yard_id, status="bid_received"))
+
+
+def _build_more_scenarios(db: Session, org: Organization, vessels: dict[str, Vessel]) -> None:
+    """A working fleet across every stage — not one hero tender. Each tender's TEC is
+    computed by the same engine path as the live app, so the numbers are all real."""
+    # --- Issued tender under leveling: Serifos Wind (Aframax), 3 bids in ---
+    s = _light_spec(db, org, vessels["Serifos Wind"], "Serifos Wind — SS No. 2 docking specification",
+                    frozen_on=date(2026, 6, 5))
+    t = Tender(org_id=org.id, spec_id=s.id, ref="TND-2026-011", status="issued",
+               deadline=_dt(date(2026, 8, 5)), fx_date=_dt(date(2026, 7, 1)),
+               offhire_usd_day=19500, sealed=True)
+    db.add(t); db.flush()
+    _make_bid(db, t, "N-KOM", 12, 640, 45000, 0.05, True,
+              {1: 262000, 2: 388000, 3: 341000, 4: 104000, 5: 88000, 6: 176000, 7: 150000, 8: 210000})
+    _make_bid(db, t, "Drydocks World — Dubai", 11, 210, 30000, 0.042, True,
+              {1: 271000, 2: 402000, 3: 356000, 4: 111000, 5: 92000, 6: 182000, 7: 158000, 8: 219000})
+    _make_bid(db, t, "Gemak Group (Tuzla)", 15, 2180, 0, 0.098, False,
+              {1: 238000, 2: 356000, 3: 298000, 4: 98000, 5: 82000, 6: 164000, 7: 140000, 8: 196000},
+              exclusions=[{"label": "Tank cleaning", "median": 48000}, {"label": "Staging", "median": 36000}])
+    _store_evaluation(db, t)
+
+    # --- Issued tender, bids just arriving (not yet evaluated): Folegandros Bay ---
+    s2 = _light_spec(db, org, vessels["Folegandros Bay"], "Folegandros Bay — SS No. 2 docking specification",
+                     frozen_on=date(2026, 6, 22))
+    t2 = Tender(org_id=org.id, spec_id=s2.id, ref="TND-2026-012", status="issued",
+                deadline=_dt(date(2026, 9, 1)), offhire_usd_day=18000, sealed=True)
+    db.add(t2); db.flush()
+    for key in ["Cochin Shipyard", "Colombo Dockyard", "ASRY — Arab Shipbuilding", "L&T Kattupalli"]:
+        y = _match_yard(db, key)
+        if y:
+            db.add(Invitation(tender_id=t2.id, yard_id=y.id, status="invited"))
+    _make_bid(db, t2, "Cochin Shipyard", 13, 480, 20000, 0.06, True,
+              {1: 188000, 2: 262000, 3: 214000, 4: 76000, 5: 64000, 6: 0, 7: 108000, 8: 152000})
+    # left un-evaluated so the "Ready to level" empty-state path is represented
+
+    # --- Two more settled dockings (rich Settlements + real growth average) ---
+    _build_settled(db, org, vessels["Ikaria Dawn"], "TND-2026-004", "Cochin Shipyard",
+                   dock_days=10, sections={1: 148000, 2: 208000, 3: 132000, 4: 58000, 5: 44000,
+                                           6: 96000, 7: 84000, 8: 120000, 9: 40000, 10: 36000},
+                   vos_approved=41000, quality=4, hse=4, overrun=1, closed_on=date(2026, 4, 28))
+    _build_settled(db, org, vessels["Skyros Light"], "TND-2026-002", "Seatrium Admiralty Yard",
+                   dock_days=13, sections={1: 262000, 2: 388000, 3: 296000, 4: 108000, 5: 92000,
+                                           6: 178000, 7: 148000, 8: 214000, 9: 78000, 10: 62000},
+                   vos_approved=64000, quality=5, hse=5, overrun=0, closed_on=date(2026, 5, 19))
+
+    # --- Another live in-dock execution: Amorgos Spirit (mid-docking) ---
+    _build_indock(db, org, vessels["Amorgos Spirit"], "TND-2026-010", "Oman Drydock Company (Duqm)",
+                  slot=(date(2026, 6, 30), date(2026, 7, 12)))
+
+
+def _build_settled(db, org, vessel, ref, yard_key, dock_days, sections, vos_approved,
+                   quality, hse, overrun, closed_on) -> None:
+    """A completed docking with a computed final account and a yard scorecard entry."""
+    s = _light_spec(db, org, vessel, f"{vessel.name} — completed docking specification",
+                    frozen_on=closed_on - timedelta(days=90))
+    t = Tender(org_id=org.id, spec_id=s.id, ref=ref, status="awarded",
+               deadline=_dt(closed_on - timedelta(days=70)), offhire_usd_day=vessel.tce_usd_day, sealed=False)
+    db.add(t); db.flush()
+    bid = _make_bid(db, t, yard_key, dock_days, 300, 20000, 0.05, True, sections)
+    _store_evaluation(db, t)
+    aw = Award(tender_id=t.id, bid_id=bid.id, memo_note=f"Awarded to {yard_key} on TEC.",
+               checklist_json={"tariff_annexed": True, "validity": True, "dock_confirmed": True},
+               awarded_at=_dt(closed_on - timedelta(days=60)))
+    db.add(aw); db.flush()
+    quoted = round(sum(sections.values()), 2)
+    final = round(quoted + vos_approved, 2)
+    growth = round((final / quoted - 1) * 100, 1) if quoted else 0.0
+    db.add(FinalAccount(award_id=aw.id, quoted_usd=quoted, final_usd=final, growth_pct=growth,
+                        lines_json=[{"section": "Contract price", "quoted": quoted, "final": quoted},
+                                    {"section": "Approved variations", "quoted": 0, "final": vos_approved}],
+                        closed_at=_dt(closed_on)))
+    y = _match_yard(db, yard_key)
+    if y:
+        db.add(YardScore(yard_id=y.id, docking_ref=ref, growth_pct=growth, overrun_days=overrun,
+                         quality=quality, hse=hse))
+
+
+def _build_indock(db, org, vessel, ref, yard_key, slot) -> None:
+    """A live docking mid-execution with a couple of open VOs."""
+    s = _light_spec(db, org, vessel, f"{vessel.name} — SS docking specification",
+                    frozen_on=date(2026, 5, 20))
+    t = Tender(org_id=org.id, spec_id=s.id, ref=ref, status="awarded",
+               deadline=_dt(date(2026, 5, 30)), offhire_usd_day=vessel.tce_usd_day, sealed=False)
+    db.add(t); db.flush()
+    bid = _make_bid(db, t, yard_key, 12, 300, 20000, 0.05, True,
+                    {1: 158000, 2: 224000, 3: 168000, 4: 62000, 5: 52000, 6: 0, 7: 96000, 8: 138000},
+                    slot=slot)
+    _store_evaluation(db, t)
+    aw = Award(tender_id=t.id, bid_id=bid.id, memo_note=f"Awarded to {yard_key}.",
+               checklist_json={"tariff_annexed": True, "validity": True, "dock_confirmed": True},
+               awarded_at=_dt(date(2026, 6, 1)))
+    db.add(aw); db.flush()
+    vos = [
+        ("VO-01", "Additional bilge plating renewal", 3, "t", 11200, "§3.1", 10800, "approved"),
+        ("VO-02", "Extra tank staging", 80, "m3", 1440, "§1.16", 1440, "approved"),
+        ("VO-03", "Overboard valve found wasted", 1, "ea", 5200, "§4.1", 4600, "proposed"),
+    ]
+    for (no, title, qty, uom, proposed, tref, tariff, state) in vos:
+        db.add(VariationOrder(org_id=org.id, award_id=aw.id, vo_no=no, title=title, qty=qty, uom=uom,
+                              proposed_usd=proposed, tariff_line_ref=tref, tariff_usd=tariff, state=state,
+                              decided_by="S. Nair" if state == "approved" else None,
+                              decided_at=_dt(date(2026, 7, 2)) if state == "approved" else None))
+
+
 def _build_yard_scores(db: Session) -> None:
+    # Curated performance history across the yard book — several yards carry more than
+    # one prior docking so the scorecard averages and the yard history table read real.
     data = [
+        # (yard key, docking ref, growth %, overrun days, quality 1-5, hse 1-5)
+        ("Drydocks World — Dubai", "TND-2025-022", 5.2, 0, 5, 4),
+        ("Drydocks World — Dubai", "TND-2024-018", 4.1, 0, 5, 5),
+        ("Drydocks World — Dubai", "TND-2023-044", 6.0, 1, 4, 4),
+        ("Seatrium Admiralty Yard", "TND-2025-019", 4.8, 1, 5, 5),
+        ("Seatrium Admiralty Yard", "TND-2024-007", 3.9, 0, 5, 5),
+        ("ASRY — Arab Shipbuilding", "TND-2025-041", 6.1, 0, 4, 5),
+        ("ASRY — Arab Shipbuilding", "TND-2024-029", 7.3, 2, 4, 4),
         ("Colombo Dockyard", "TND-2026-006", 9.4, 1, 4, 4),
-        ("ASRY", "TND-2025-041", 6.1, 0, 4, 5),
-        ("Drydocks World", "TND-2025-022", 5.2, 0, 5, 4),
-        ("Seatrium Admiralty", "TND-2025-019", 4.8, 1, 5, 5),
-        ("Besiktas", "TND-2024-033", 14.7, 3, 3, 3),
+        ("Colombo Dockyard", "TND-2024-051", 8.2, 2, 3, 4),
+        ("Besiktas Shipyard (Yalova)", "TND-2024-033", 14.7, 3, 3, 3),
+        ("Besiktas Shipyard (Yalova)", "TND-2023-012", 12.1, 4, 3, 3),
+        ("Sembcorp Marine Karimun", "TND-2025-033", 5.5, 1, 4, 4),
+        ("Oman Drydock Company (Duqm)", "TND-2025-028", 6.8, 1, 4, 5),
+        ("N-KOM", "TND-2025-014", 4.4, 0, 5, 5),
+        ("Cochin Shipyard", "TND-2025-009", 7.7, 2, 4, 4),
+        ("Hindustan Shipyard", "TND-2024-047", 10.3, 3, 3, 4),
+        ("COSCO Shipping Zhoushan", "TND-2025-036", 5.9, 1, 4, 4),
+        ("COSCO Shipping Dalian", "TND-2025-021", 6.4, 1, 4, 5),
+        ("Huarun Dadong Dockyard", "TND-2024-039", 8.9, 2, 4, 3),
+        ("Gemak Group (Tuzla)", "TND-2024-025", 11.2, 3, 3, 3),
+        ("Desan Shipyard (Tuzla)", "TND-2024-016", 9.8, 2, 3, 4),
+        ("Remontowa Ship Repair", "TND-2025-004", 3.6, 0, 5, 5),
+        ("Fayard (Odense)", "TND-2024-002", 2.9, 0, 5, 5),
+        ("Damen Verolme (Rotterdam)", "TND-2024-031", 4.7, 1, 5, 4),
+        ("Grand Bahama Shipyard", "TND-2025-012", 7.1, 1, 4, 4),
+        ("Detyens Shipyards", "TND-2024-044", 5.3, 0, 4, 5),
+        ("Gibdock (Gibraltar)", "TND-2024-020", 6.6, 1, 4, 4),
     ]
     for (yard_key, ref, growth, overrun, quality, hse) in data:
         yard = _match_yard(db, yard_key)

@@ -92,6 +92,9 @@ def close_settlement(award_id: str, body: SettlementIn, user: User = Depends(get
         c = db.scalar(select(TecComponent).where(TecComponent.evaluation_id == ev.id,
                                                  TecComponent.bid_id == aw.bid_id))
         quoted = c.normalized_usd if c else 0.0
+    if not quoted and bid:  # no evaluation — fall back to the awarded bid's priced lines
+        quoted = round(sum(l.amount for l in bid.lines
+                           if l.state == "priced" and l.amount is not None), 2)
     approved_vos = sum(v.proposed_usd for v in db.scalars(
         select(VariationOrder).where(VariationOrder.award_id == aw.id, VariationOrder.state == "approved")))
     final = body.final_usd or round(quoted + approved_vos, 2)

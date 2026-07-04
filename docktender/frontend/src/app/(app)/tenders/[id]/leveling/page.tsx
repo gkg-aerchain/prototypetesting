@@ -12,13 +12,39 @@ export default function LevelingPage() {
   const [lev, setLev] = useState<Leveling | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [showExposure, setShowExposure] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
 
-  useEffect(() => {
-    api.get<Leveling>(`/api/tenders/${id}/leveling`).then(setLev).catch((e) => setErr(String(e.message)));
-  }, [id]);
+  const load = () => api.get<Leveling>(`/api/tenders/${id}/leveling`).then(setLev).catch((e) => setErr(String(e.message)));
+  useEffect(() => { load(); }, [id]);
 
-  if (err) return <div className="empty"><h3>No leveling yet</h3><p>{err}</p></div>;
+  async function evaluate() {
+    setEvaluating(true);
+    try { setLev(await api.post<Leveling>(`/api/tenders/${id}/evaluate`, {})); }
+    catch (e) { setErr((e as Error).message); }
+    setEvaluating(false);
+  }
+
+  if (err) return <div className="empty"><h3>Couldn’t load leveling</h3><p>{err}</p></div>;
   if (!lev) return <div className="skel" style={{ height: 400 }} />;
+
+  if (lev.cards.length === 0) {
+    const hasBids = (lev.bids_received ?? 0) > 0;
+    return (
+      <>
+        <div className="stage-head">
+          <div><span className="eyebrow">{lev.tender_ref} · leveling</span><h1 style={{ marginTop: 6 }}>Leveling</h1></div>
+          <button className="btn btn-quiet" onClick={() => router.push(`/tenders/${id}`)}>Back to tender</button>
+        </div>
+        <div className="empty">
+          <h3>{hasBids ? "Ready to level" : "No bids received yet"}</h3>
+          <p>{hasBids
+            ? `${lev.bids_received} bid${lev.bids_received === 1 ? "" : "s"} in. Run the Total Evaluated Cost engine to normalize and rank them.`
+            : "Bids arrive from the portal or AI ingestion. Level them here once received."}</p>
+          {hasBids && <button className="btn btn-signal" style={{ marginTop: 14 }} disabled={evaluating} onClick={evaluate}>{evaluating ? "Evaluating…" : "Evaluate bids"}</button>}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -32,6 +58,7 @@ export default function LevelingPage() {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn btn-quiet" onClick={() => router.push(`/tenders/${id}`)}>Back to tender</button>
+          <button className="btn btn-quiet" disabled={evaluating} onClick={evaluate}>{evaluating ? "Re-evaluating…" : "Re-evaluate"}</button>
           <button className="btn btn-signal" onClick={() => router.push(`/tenders/${id}?award=1`)}>Draft award memo</button>
         </div>
       </div>

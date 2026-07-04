@@ -149,6 +149,7 @@ export interface Leveling {
   cards: TecCard[];
   matrix: { columns: { bid_id: string; yard: string }[]; rows: MatrixRow[] };
   exposure: { bid_id: string; yard: string; total_usd: number; items: { label: string; kind: string; exposure_usd: number }[] }[];
+  bids_received?: number; evaluated?: boolean;
 }
 
 export interface SpecSummary {

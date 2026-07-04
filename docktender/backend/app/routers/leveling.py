@@ -4,7 +4,7 @@ the itemized exposure model, all from the stored evaluation."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
@@ -62,10 +62,19 @@ def _bid_flags(db: Session, bid: Bid, comp: TecComponent) -> list[dict]:
 def leveling(tender_id: str, user: User = Depends(get_current_user),
              db: Session = Depends(get_db)) -> dict:
     t = _guard(db, tender_id, user.org_id)
+    n_bids = db.scalar(select(func.count()).select_from(Bid).where(Bid.tender_id == t.id)) or 0
     ev = db.scalar(select(Evaluation).where(Evaluation.tender_id == t.id)
                    .order_by(Evaluation.computed_at.desc()))
     if not ev:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No evaluation yet — run /evaluate")
+        # Graceful empty state — a tender with no evaluation yet is a normal stage,
+        # not an error. The screen shows an empty leveling with the bid count.
+        return {
+            "tender_ref": t.ref, "spec_line_count": 0,
+            "fx_date": t.fx_date.isoformat() if t.fx_date else None,
+            "offhire_usd_day": t.offhire_usd_day, "legend": LEGEND,
+            "cards": [], "matrix": {"columns": [], "rows": []}, "exposure": [],
+            "bids_received": n_bids, "evaluated": False,
+        }
 
     comps = list(db.scalars(select(TecComponent).where(TecComponent.evaluation_id == ev.id)
                             .order_by(TecComponent.rank)))
@@ -105,8 +114,6 @@ def leveling(tender_id: str, user: User = Depends(get_current_user),
 
     matrix = _build_matrix(db, t, bids)
     exposure = _build_exposure(db, comps, bids)
-
-    from sqlalchemy import func
 
     spec_lines = db.scalar(select(func.count()).select_from(SpecItem)
                            .where(SpecItem.spec_id == t.spec_id)) or 0

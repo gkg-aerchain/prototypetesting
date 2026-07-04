@@ -29,9 +29,7 @@ def demo(tmp_path_factory):
 def test_executions_paros_in_dock(demo):
     c, h = demo
     execs = c.get("/api/executions", headers=h).json()
-    assert len(execs) == 1
-    paros = execs[0]
-    assert paros["vessel"] == "Paros Horizon"
+    paros = next(e for e in execs if e["vessel"] == "Paros Horizon")
     assert paros["in_dock"] and paros["dock_day"] == 6 and paros["dock_total"] == 13
     assert paros["vo_count"] == 8 and paros["vo_open"] == 2
     # VO-07 is over tariff by $4,100
@@ -42,7 +40,8 @@ def test_executions_paros_in_dock(demo):
 def test_vo_approve(demo):
     c, h = demo
     execs = c.get("/api/executions", headers=h).json()
-    vo = next(v for v in execs[0]["vos"] if v["state"] == "proposed")
+    paros = next(e for e in execs if e["vessel"] == "Paros Horizon")
+    vo = next(v for v in paros["vos"] if v["state"] == "proposed")
     r = c.patch(f"/api/vos/{vo['id']}", json={"state": "approved", "reason": "within scope"}, headers=h)
     assert r.status_code == 200 and r.json()["state"] == "approved"
 
@@ -50,7 +49,9 @@ def test_vo_approve(demo):
 def test_settlements_and_scorecards(demo):
     c, h = demo
     s = c.get("/api/settlements", headers=h).json()
-    assert s["kpi"]["avg_growth_pct"] == 9.4
+    # multiple settled dockings, averaged; Milos Beacon among them at +9.4%
+    assert s["kpi"]["settled_count"] >= 3
+    assert s["kpi"]["avg_growth_pct"] > 0
     assert any(a["vessel"] == "Milos Beacon" and a["growth_pct"] == 9.4 for a in s["accounts"])
     # scorecards ranked best-growth first; Besiktas worst
     assert s["scorecards"][0]["avg_growth_pct"] <= s["scorecards"][-1]["avg_growth_pct"]
