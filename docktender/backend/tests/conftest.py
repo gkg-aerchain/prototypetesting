@@ -19,6 +19,16 @@ from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _reset_seed_flag():
+    # Every test module rebinds the global engine to its own SQLite file. The app
+    # seeds once per process (guarded by app.main._seeded); reset the flag before
+    # each module so the lifespan re-runs create_all() against the new engine.
+    import app.main as appmain
+    appmain._seeded = False
+    yield
+
+
 @pytest.fixture(scope="module")
 def client():
     # Rebind the global engine to a fresh dt_test.db for this module. Other modules
@@ -37,6 +47,10 @@ def client():
     dbmod.engine = sqlalchemy.create_engine(
         url, connect_args={"check_same_thread": False}, future=True)
     dbmod.SessionLocal.configure(bind=dbmod.engine)
+    # The app seeds once per process (guarded by app.main._seeded); reset it so the
+    # lifespan re-runs create_all() against this module's freshly-bound engine.
+    import app.main as appmain
+    appmain._seeded = False
     with TestClient(app) as c:
         yield c
     dbmod.engine.dispose()

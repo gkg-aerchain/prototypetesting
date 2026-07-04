@@ -17,8 +17,20 @@ from .db import SessionLocal, create_all
 from .routers import auth, health, me
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+_seeded = False
+
+
+def _ensure_seeded() -> None:
+    """Create schema and seed the demo once per process.
+
+    Runs from the lifespan (local/uvicorn/pytest) and, because Vercel's
+    serverless ASGI adapter does not reliably fire lifespan startup, also
+    lazily on the first HTTP request. ``seed_all`` is idempotent, so a double
+    invocation is harmless.
+    """
+    global _seeded
+    if _seeded:
+        return
     create_all()
     if settings.demo_seed and settings.is_sqlite:
         from .seed.loader import seed_all
@@ -28,6 +40,12 @@ async def lifespan(app: FastAPI):
             seed_all(db)
         finally:
             db.close()
+    _seeded = True
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    _ensure_seeded()
     yield
 
 
@@ -40,6 +58,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _seed_on_first_request(request, call_next):
+    if not _seeded:
+        _ensure_seeded()
+    return await call_next(request)
 
 app.include_router(health.router)
 app.include_router(auth.router)
