@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import { api, Vessel, YardDto } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
+import { api, TenderSummary, Vessel, YardDto } from "@/lib/api";
+import { fmtDate } from "@/lib/format";
 
 const REGIONS = [
   { k: "", label: "All regions" }, { k: "SEA", label: "SE Asia" }, { k: "MEast", label: "Middle East" },
@@ -26,6 +27,7 @@ export default function YardsPage() {
   }, [region, vesselId, fitsOnly]);
 
   const vessel = fleet.find((v) => v.id === vesselId);
+  const [openYard, setOpenYard] = useState<string | null>(null);
 
   return (
     <>
@@ -66,7 +68,7 @@ export default function YardsPage() {
       ) : (
         <div className="card-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
           {yards.map((y) => (
-            <div key={y.id} className="panel" style={{ padding: 0 }}>
+            <div key={y.id} className="panel yard-card" style={{ padding: 0 }} onClick={() => setOpenYard(y.id)}>
               <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--hairline)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{y.name}</div>
@@ -96,10 +98,95 @@ export default function YardsPage() {
                   ))}
                 </tbody>
               </table>
+              <div className="yard-card-foot">Details &amp; invite →</div>
             </div>
           ))}
         </div>
       )}
+      {openYard && <YardDrawer yardId={openYard} vesselId={vesselId} onClose={() => setOpenYard(null)} />}
     </>
+  );
+}
+
+function YardDrawer({ yardId, vesselId, onClose }: { yardId: string; vesselId: string; onClose: () => void }) {
+  const [y, setY] = useState<YardDto | null>(null);
+  const [tenders, setTenders] = useState<TenderSummary[]>([]);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    const p = new URLSearchParams(); if (vesselId) p.set("vessel_id", vesselId);
+    api.get<YardDto>(`/api/yards/${yardId}?${p}`).then(setY);
+  }, [yardId, vesselId]);
+  useEffect(load, [load]);
+  useEffect(() => { api.get<TenderSummary[]>("/api/tenders").then((ts) => setTenders(ts.filter((t) => t.status === "draft" || t.status === "issued"))); }, []);
+
+  async function invite(tid: string, ref: string) {
+    try { await api.post(`/api/tenders/${tid}/invite`, { yard_ids: [yardId] }); setMsg(`Invited to ${ref}.`); }
+    catch (e) { setMsg((e as Error).message); }
+  }
+
+  if (!y) return <div className="drawer-backdrop" onClick={onClose}><div className="drawer" onClick={(e) => e.stopPropagation()}><div className="skel" style={{ height: 300 }} /></div></div>;
+  const scores = y.scores || [];
+
+  return (
+    <div className="drawer-backdrop" onClick={onClose}>
+      <div className="drawer" onClick={(e) => e.stopPropagation()}>
+        <span className="eyebrow">{y.region} · {y.labor_rate_band} labour</span>
+        <h2 style={{ marginTop: 6 }}>{y.name}</h2>
+        <div className="sub" style={{ marginBottom: 16 }}>{y.country} · {y.docks.length} docks</div>
+
+        <div className="eyebrow dim" style={{ marginBottom: 8 }}>Docks</div>
+        <div className="panel" style={{ marginBottom: 18 }}>
+          <table className="grid" style={{ fontSize: 12.5 }}>
+            <thead><tr><th>Dock</th><th className="num">L × B</th><th className="num">Depth</th><th className="num">Max DWT</th></tr></thead>
+            <tbody>
+              {y.docks.map((d) => (
+                <tr key={d.id}>
+                  <td><b>{d.name}</b> <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{d.kind}</span>
+                    {vesselId && d.fits != null && <span className={`pill ${d.fits ? "good" : "crit"}`} style={{ marginLeft: 8 }}>{d.fits ? "fits" : "no fit"}</span>}</td>
+                  <td className="num">{d.length_m}×{d.beam_m} m</td>
+                  <td className="num">{d.depth_over_blocks_m} m</td>
+                  <td className="num">{d.max_dwt.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="eyebrow dim" style={{ marginBottom: 8 }}>Performance history</div>
+        {scores.length === 0 ? <div className="sub" style={{ marginBottom: 18 }}>No prior dockings recorded for this yard.</div> : (
+          <div className="panel" style={{ marginBottom: 18 }}>
+            <table className="grid" style={{ fontSize: 12.5 }}>
+              <thead><tr><th>Docking</th><th className="num">Growth</th><th className="num">Overrun</th><th className="num">Quality</th><th className="num">HSE</th></tr></thead>
+              <tbody>
+                {scores.map((s, i) => (
+                  <tr key={i}>
+                    <td className="mono" style={{ fontSize: 11.5 }}>{s.docking_ref}</td>
+                    <td className="num" style={{ color: s.growth_pct > 8 ? "var(--crit)" : s.growth_pct > 4 ? "var(--warn)" : "var(--good)" }}>+{s.growth_pct}%</td>
+                    <td className="num">{s.overrun_days} d</td>
+                    <td className="num">{s.quality}/5</td>
+                    <td className="num">{s.hse}/5</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="eyebrow dim" style={{ marginBottom: 8 }}>Invite to a tender</div>
+        {tenders.length === 0 ? <div className="sub">No open tenders. Create one from a frozen spec.</div> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {tenders.map((t) => (
+              <div key={t.id} className="invite-row" style={{ borderRadius: "var(--r-sm)", border: "1px solid var(--hairline)" }}>
+                <div style={{ flex: 1 }}><b>{t.ref}</b> — {t.vessel} <span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>{t.status}</span>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>deadline {fmtDate(t.deadline)}</div></div>
+                <button className="btn btn-quiet" style={{ padding: "5px 12px", fontSize: 12 }} onClick={() => invite(t.id, t.ref)}>Invite</button>
+              </div>
+            ))}
+          </div>
+        )}
+        {msg && <div style={{ marginTop: 12, fontSize: 13, color: "var(--good)" }}>{msg}</div>}
+      </div>
+    </div>
   );
 }

@@ -331,6 +331,11 @@ td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numer
 .modal { background: var(--card); border: 1px solid var(--hairline-2); border-radius: var(--r-lg); width: 560px; max-width: 92vw; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lift); padding: 28px 30px; animation: pop var(--dur-2) var(--ease-out) both; }
 .modal h2 { letter-spacing: -.02em; }
 
+/* yard cards */
+.yard-card { cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease); overflow: hidden; }
+.yard-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: var(--hairline-2); }
+.yard-card-foot { padding: 10px 18px; font-size: 12px; font-weight: 600; color: var(--signal-deep); border-top: 1px solid var(--hairline); }
+
 /* invite picker */
 .invite-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--hairline); cursor: pointer; transition: background var(--dur) var(--ease); }
 .invite-row:last-child { border-bottom: 0; }
