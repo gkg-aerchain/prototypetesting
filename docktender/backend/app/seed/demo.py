@@ -170,6 +170,8 @@ def seed_demo_data(db: Session, org: Organization) -> None:
             slot_start=_dt(bspec["slot"][0]), slot_end=_dt(bspec["slot"][1]),
             terms_json={"note": bspec["note"]}, tariff_captured=bspec["tariff"],
             sealed_until=_dt(date(2026, 7, 10)), source="portal",
+            deviation_nm=bspec["deviation_nm"], port_fees_usd=bspec["port_fees"],
+            growth_pct=bspec["growth_pct"],
         )
         db.add(bid)
         db.flush()
@@ -286,6 +288,12 @@ def _build_bid_lines(db: Session, bid: Bid, bspec: dict, section_items: dict[int
     section carries that section's subtotal; excluded/unpriced items are flagged."""
     col = {"Drydocks World — Dubai": 2, "Seatrium Admiralty Yard": 3,
            "Besiktas Shipyard (Yalova)": 4}[bspec["yard"]]
+    # Exposure medians for items excluded as whole unpriced sections (e.g. Seatrium's
+    # boiler) vs. standalone excluded sub-items (e.g. Besiktas's six). Each median is
+    # stored on its line so the TEC assembler reads it back from the bid, not a dict.
+    standalone_labels = {s["label"] for s in bspec.get("standalone_exclusions", [])}
+    section_exposure = [e for e in bspec.get("excluded", []) if e["label"] not in standalone_labels]
+    below_norm = bspec.get("below_norm", [])
     priced_total = 0.0
     section_no = 0
     for (sec_name, _hint, dubai, semb, bes, bes_flag) in SECTION_MATRIX:
@@ -296,17 +304,21 @@ def _build_bid_lines(db: Session, bid: Bid, bspec: dict, section_items: dict[int
         # The section flag only applies to the Besiktas column (col 4).
         flag = bes_flag if col == 4 else None
         if amount is None:
-            # unpriced (Sembcorp boiler)
+            # Unpriced whole section (Seatrium boiler): carry its exposure median.
+            median = section_exposure.pop(0)["median_usd"] if section_exposure else None
             db.add(BidLine(
                 bid_id=bid.id, spec_item_id=target_item.id if target_item else None,
                 raw_text=sec_name, uom="lot", state="unpriced",
-                assumptions=flag or "Priced on inspection",
+                assumptions=flag or "Priced on inspection", exposure_median_usd=median,
             ))
             continue
+        # A below-norm man-hour rate on a TBC quantity attaches to its section line
+        # (Besiktas steel §3) as growth exposure the engine prices into V.
+        bn = below_norm[0]["extra_usd"] if (col == 4 and section_no == 3 and below_norm) else None
         db.add(BidLine(
             bid_id=bid.id, spec_item_id=target_item.id if target_item else None,
             raw_text=sec_name, uom="lot", amount=float(amount), state="priced",
-            assumptions=flag or "",
+            assumptions=flag or "", below_norm_usd=bn,
         ))
         priced_total += amount
     # remainder line to reach the bid's normalized total (other sections §7-§10)
@@ -316,30 +328,29 @@ def _build_bid_lines(db: Session, bid: Bid, bspec: dict, section_items: dict[int
             bid_id=bid.id, spec_item_id=None, raw_text="Sections §7–§10 (machinery, piping, class)",
             uom="lot", amount=remainder, state="priced",
         ))
-    # Standalone exclusion lines (sub-items excluded from scope, not whole sections).
-    # An item that is an unpriced *section* (e.g. Sembcorp's boiler) is represented by
-    # its unpriced section line above, not duplicated here.
+    # Standalone exclusion lines (sub-items excluded from scope, not whole sections),
+    # each carrying the tariff median used to price its VO exposure.
+    exc_median = {e["label"]: e["median_usd"] for e in bspec.get("excluded", [])}
     for exc in bspec.get("standalone_exclusions", []):
         db.add(BidLine(
             bid_id=bid.id, spec_item_id=None, raw_text=exc["label"], state="excluded",
             assumptions="Excluded from bid scope",
+            exposure_median_usd=exc_median.get(exc["label"]),
         ))
 
 
 def _build_evaluation(db: Session, tender: Tender, bids: list[Bid]) -> None:
-    from ..engines.tec import BidEval, TecParams, evaluate
+    from ..engines.assemble import build_bid_evals
+    from ..engines.tec import TecParams, evaluate
 
+    # Compute the demo's TEC from the stored bids/lines via the same assembler the
+    # live /evaluate endpoint uses — no hardcoded normalized totals or exposure dicts.
+    # Bid lines were linked by raw FK during seeding, so expire cached collections to
+    # force the assembler to read the freshly-flushed lines from the DB.
+    db.flush()
+    db.expire_all()
     params = TecParams(offhire_usd_day=tender.offhire_usd_day)
-    yard_name = {b.id: _yard_name(db, b.yard_id) for b in bids}
-    evals = []
-    for bid, bspec in zip(bids, BID_SPECS):
-        evals.append(BidEval(
-            bid_id=bid.id, yard_name=yard_name[bid.id], normalized_usd=bspec["normalized"],
-            dock_days=bspec["dock_days"], deviation_nm=bspec["deviation_nm"],
-            deviation_port_fees=bspec["port_fees"], excluded_items=bspec["excluded"],
-            below_norm_items=bspec["below_norm"], growth_pct=bspec["growth_pct"],
-            has_crit_flag=bspec["crit"], sticker_usd=bspec["sticker"],
-        ))
+    evals = build_bid_evals(db, tender)
     comps = evaluate(evals, params)
 
     ev = Evaluation(tender_id=tender.id, params_json={

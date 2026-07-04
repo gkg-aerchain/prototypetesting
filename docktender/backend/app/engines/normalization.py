@@ -84,8 +84,13 @@ def level_bid(bid, spec_items, fx_rates: dict[str, float]) -> LeveledBid:
     for line in bid.lines:
         sid = line.spec_item_id
         if sid is None or sid not in by_item:
-            if line.spec_item_id is None:
+            # A line not yet mapped to a spec item is surfaced for review, but if it is
+            # a real counted priced line it is still money in the bid and contributes to
+            # the normalized total (dropping it would understate N and desync leveling).
+            if sid is None:
                 unmatched.append(line.id)
+            if _line_counts(line):
+                total += to_base(line.amount, bid.currency, fx_rates)
             continue
         ll = by_item[sid]
         ll.matched = True

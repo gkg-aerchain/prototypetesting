@@ -196,13 +196,12 @@ def evaluate_tender(tender_id: str, body: EvaluateIn, user: User = Depends(get_c
     """Recompute the evaluation from the tender's bids and (optional) new params.
     Uses the normalization + TEC engines over the reviewed bid lines."""
     from ..core.audit import audit
-    from ..engines.tec import BidEval, TecParams, evaluate as run_tec
-    from ..engines.normalization import level_bid
+    from ..engines.assemble import build_bid_evals
+    from ..engines.tec import TecParams, evaluate as run_tec
 
     t = _guard(db, tender_id, user.org_id)
-    spec_items = list(db.scalars(select(SpecItem).where(SpecItem.spec_id == t.spec_id)))
-    bids = list(db.scalars(select(Bid).where(Bid.tender_id == t.id)))
-    if not bids:
+    evals = build_bid_evals(db, t)
+    if not evals:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No bids to evaluate")
 
     params = TecParams(
@@ -211,17 +210,6 @@ def evaluate_tender(tender_id: str, body: EvaluateIn, user: User = Depends(get_c
         fuel_usd_t=body.fuel_usd_t or 580.0,
         speed_kn=body.speed_kn or 12.5,
     )
-    evals = []
-    for bid in bids:
-        leveled = level_bid(bid, spec_items, t.fx_rates_json or {})
-        excluded = [{"label": l.raw_text, "median_usd": _median_for(l)} for l in bid.lines
-                    if l.state == "excluded"]
-        yard = db.get(Yard, bid.yard_id) if bid.yard_id else None
-        evals.append(BidEval(
-            bid_id=bid.id, yard_name=yard.name if yard else "—",
-            normalized_usd=leveled.normalized_usd, dock_days=bid.dock_days,
-            excluded_items=excluded, sticker_usd=leveled.normalized_usd,
-        ))
     comps = run_tec(evals, params)
 
     ev = Evaluation(tender_id=t.id, params_json={
@@ -242,9 +230,3 @@ def evaluate_tender(tender_id: str, body: EvaluateIn, user: User = Depends(get_c
     audit(db, org_id=user.org_id, actor_id=user.id, action="evaluate", entity="tender", entity_id=t.id)
     db.commit()
     return leveling(tender_id, user, db)
-
-
-def _median_for(line: BidLine) -> float:
-    """Regional tariff median used to price an excluded item. For the demo we use a
-    conservative flat estimate; a production build would look up region medians."""
-    return 30000.0

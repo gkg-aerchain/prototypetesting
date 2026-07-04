@@ -191,6 +191,13 @@ class Bid(TimestampMixin, Base):
     slot_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     terms_json: Mapped[dict] = mapped_column(JSON, default=dict)
     tariff_captured: Mapped[bool] = mapped_column(Boolean, default=False)
+    # TEC deviation inputs, captured with the bid (routing distance from the vessel's
+    # discharge port to the yard, and port/canal dues for that deviation).
+    deviation_nm: Mapped[float] = mapped_column(Float, default=0.0)
+    port_fees_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    # Final-account growth factor for this yard; None -> tender/params default. In a
+    # real build this is derived from the yard's scorecard history.
+    growth_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     sealed_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     source: Mapped[str] = mapped_column(String(16), default="portal")  # portal|ai_ingest
     lines: Mapped[list["BidLine"]] = relationship(
@@ -209,6 +216,11 @@ class BidLine(TimestampMixin, Base):
     amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     state: Mapped[str] = mapped_column(String(16), default="priced")  # priced|included|excluded|unpriced
     assumptions: Mapped[str] = mapped_column(Text, default="")
+    # VO-exposure inputs for excluded/unpriced lines: the provisional value used to
+    # price the risk (a regional tariff median), and any extra carried because the
+    # line's man-hour norm is below the guide band on a to-be-confirmed quantity.
+    exposure_median_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
+    below_norm_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
     ai_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     reviewed_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
